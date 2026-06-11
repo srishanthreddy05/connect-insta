@@ -71,14 +71,14 @@ async function checkSubscription(pageId, pageAccessToken) {
   logger.info(reqId, `📨 Sending DM`, { fromIgAccount: instagramId, to: recipientIgUserId });
 
   // Use graph.facebook.com with the Instagram Business Account ID
-  const res = await axios.post(
-    `https://graph.facebook.com/v21.0/${instagramId}/messages`,
-    {
-      recipient: { id: recipientIgUserId },
-      message: { text: messageText },
-    },
-    { params: { access_token: pageAccessToken } }
-  );
+const res = await axios.post(
+  `https://graph.instagram.com/v25.0/me/messages`,
+  {
+    recipient: { id: recipientIgUserId },
+    message: { text: messageText },
+  },
+  { params: { access_token: pageAccessToken } }
+);
 
   logger.info(reqId, `✅ DM sent`, { messageId: res.data?.message_id, to: recipientIgUserId });
   return res.data;

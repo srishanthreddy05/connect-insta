@@ -164,7 +164,7 @@ async function processWebhook(body, reqId) {
 
      const dmResult = await metaService.sendDM({
   instagramId,
-  pageAccessToken: connectedAccount.pageAccessToken, // ✅ back to page token
+  pageAccessToken: "IGAAVSJhg0h5NBZAGFPT1VQZAW9McnVMNVFZAeXptOGhtd0NVVFFZALXJLZAUJpWHN3cGltQ2xoRW5IUEhKMzUwY082aHJYX0wyclhneGx3eWU2ZAC1kZAWhsdUEydkVid0V4RE14ZAmx2SlN2a0U2aWNEc0lPTU9TdGEtZAmxTcnNhWElqUQZDZD", // ✅ back to page token
   recipientIgUserId: commenterId,
   messageText: automation.responseMessage,
   reqId,
