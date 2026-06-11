@@ -162,13 +162,13 @@ async function processWebhook(body, reqId) {
         tokenStart: tokenToUse?.substring(0, 20),
       });
 
-      const dmResult = await metaService.sendDM({
-        instagramId,
-        pageAccessToken: tokenToUse,
-        recipientIgUserId: commenterId,
-        messageText: automation.responseMessage,
-        reqId,
-      });
+     const dmResult = await metaService.sendDM({
+  instagramId,
+  pageAccessToken: connectedAccount.pageAccessToken, // ✅ back to page token
+  recipientIgUserId: commenterId,
+  messageText: automation.responseMessage,
+  reqId,
+});
 
       // ── Step 7: Mark event done ───────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);

@@ -63,16 +63,16 @@ async function checkSubscription(pageId, pageAccessToken) {
     params: { access_token: pageAccessToken },
   });
   return res.data;
-}
-async function sendDM({ instagramId, pageAccessToken, recipientIgUserId, messageText, reqId = "sys" }) {
+}async function sendDM({ instagramId, pageAccessToken, recipientIgUserId, messageText, reqId = "sys" }) {
   if (!pageAccessToken) throw new Error(`[sendDM] Page Access Token required`);
   if (!instagramId) throw new Error("[sendDM] instagramId is required");
   if (!recipientIgUserId) throw new Error("[sendDM] recipientIgUserId is required");
 
   logger.info(reqId, `📨 Sending DM`, { fromIgAccount: instagramId, to: recipientIgUserId });
 
+  // Use graph.facebook.com with the Instagram Business Account ID
   const res = await axios.post(
-    `https://graph.instagram.com/v25.0/me/messages`,  // ✅ correct endpoint
+    `https://graph.facebook.com/v21.0/${instagramId}/messages`,
     {
       recipient: { id: recipientIgUserId },
       message: { text: messageText },
