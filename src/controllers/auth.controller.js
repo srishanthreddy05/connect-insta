@@ -4,7 +4,8 @@
 const config = require("../config");
 const metaService = require("../services/meta.service");
 const connectedAccountRepo = require("../repositories/connectedAccount.repository");
-const { logger, maskToken, normalizeToken } = require("../utils/logger");
+const { logger, maskToken } = require("../utils/logger");
+
 const REQUIRED_SCOPES = [
   "public_profile",
   "pages_show_list",
@@ -12,13 +13,9 @@ const REQUIRED_SCOPES = [
   "instagram_basic",
   "instagram_manage_messages",
   "instagram_manage_comments",
-  "business_management", // add this
+  "business_management",
 ];
-/**
- * GET /auth/login
- * Initiates Meta OAuth. In a multi-tenant setup, pass userId as state param
- * so the callback knows which user is connecting.
- */
+
 function login(req, res) {
   const reqId = req.reqId;
   const userId = req.query.userId || req.userId;
@@ -35,7 +32,7 @@ function login(req, res) {
     redirect_uri: config.meta.redirectUri,
     scope: REQUIRED_SCOPES.join(","),
     response_type: "code",
-    state: userId, // Pass userId through OAuth so callback can associate the account
+    state: userId,
   });
 
   const url = `https://www.facebook.com/${config.meta.graphVersion}/dialog/oauth?${params}`;
@@ -43,11 +40,6 @@ function login(req, res) {
   res.redirect(url);
 }
 
-/**
- * GET /auth/callback
- * Meta redirects here after user grants permissions.
- * Discovers all linked Instagram accounts and stores them in DB.
- */
 async function callback(req, res, next) {
   const reqId = req.reqId;
   const { code, error: oauthError, error_description, state: userId } = req.query;
@@ -61,11 +53,9 @@ async function callback(req, res, next) {
   if (!userId) return res.status(400).json({ ok: false, error: "Missing userId in state param" });
 
   try {
-    // Exchange code for User Access Token
     const userAccessToken = await metaService.exchangeCodeForToken(code);
     logger.info(reqId, `✅ User access token acquired`, { userId, token: maskToken(userAccessToken) });
 
-    // Verify scopes
     let debugData = {};
     try {
       debugData = await metaService.debugToken(userAccessToken);
@@ -80,17 +70,16 @@ async function callback(req, res, next) {
       logger.warn(reqId, `⚠️ Missing OAuth scopes`, { missingScopes });
     }
 
-    // Discover pages and linked Instagram accounts
     const pages = await metaService.fetchUserPages(userAccessToken);
     logger.info(reqId, `📃 Fetched ${pages.length} Facebook pages`, { userId });
 
     const connectedAccounts = [];
+
     for (const page of pages) {
       if (!page.instagram_business_account?.id) continue;
 
       const instagramId = page.instagram_business_account.id;
 
-      // Fetch Instagram username
       let igUsername = null;
       try {
         const igData = await metaService.fetchIgAccount(instagramId, page.access_token);
@@ -99,20 +88,19 @@ async function callback(req, res, next) {
         logger.warn(reqId, `⚠️ Could not fetch IG username for ${instagramId}`, { error: e.message });
       }
 
-      // Store in DB — upsert so reconnecting refreshes the token
       const saved = await connectedAccountRepo.upsert({
         userId,
         pageId: page.id,
         pageName: page.name,
         instagramId,
         instagramUsername: igUsername,
-        pageAccessToken: page.access_token, // encrypted at rest by repo layer
+        pageAccessToken: page.access_token,
       });
 
-      // Subscribe app to this IG account's webhooks
+      // ✅ Fix: pass page.id as first argument, not instagramId
       try {
-        await metaService.subscribeAppToIG(instagramId, page.access_token, reqId);
-        logger.info(reqId, `📡 Webhook subscription active`, { instagramId, page: page.name });
+        await metaService.subscribeAppToIG(page.id, instagramId, page.access_token, reqId);
+        logger.info(reqId, `📡 Webhook subscription active`, { pageId: page.id, instagramId, page: page.name });
       } catch (e) {
         logger.warn(reqId, `⚠️ Webhook subscription failed for ${instagramId}`, { error: e.message });
       }
@@ -138,10 +126,6 @@ async function callback(req, res, next) {
   }
 }
 
-/**
- * GET /connected-accounts
- * Lists all Instagram accounts connected by the authenticated user.
- */
 async function listConnectedAccounts(req, res, next) {
   try {
     const accounts = await connectedAccountRepo.findAllByUserId(req.userId);

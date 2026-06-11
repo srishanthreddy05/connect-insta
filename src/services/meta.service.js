@@ -7,23 +7,6 @@ const { logger } = require("../utils/logger");
 
 const BASE = config.meta.graphBase;
 
-/**
- * Fetches all Facebook Pages the authenticated user manages.
- * Used during OAuth to discover linked Instagram accounts.
- */
-// async function fetchUserPages(userAccessToken) {
-//   const res = await axios.get(`${BASE}/me/accounts`, {
-//     params: {
-//       access_token: userAccessToken,
-//       fields: "id,name,access_token,instagram_business_account",
-//     },
-//   });
-//   return res.data?.data || [];
-// }
-
-/**
- * Fetches basic Instagram account info.
- */
 async function fetchIgAccount(instagramId, pageAccessToken) {
   const res = await axios.get(`${BASE}/${instagramId}`, {
     params: {
@@ -34,78 +17,55 @@ async function fetchIgAccount(instagramId, pageAccessToken) {
   return res.data;
 }
 
-/**
- * Subscribes the app to webhook events for a specific Instagram account.
- * MUST use Page Access Token — never a User token.
- */
-/**
- * Subscribes the app to webhook events for a specific Instagram account.
- * MUST use Page Access Token.
- */
-async function subscribeAppToIG(instagramId, pageAccessToken, reqId = "sys") {
+async function subscribeAppToIG(pageId, instagramId, pageAccessToken, reqId = "sys") {
   if (!pageAccessToken) {
-    throw new Error(
-      `Page Access Token required to subscribe IG account ${instagramId}`
-    );
+    throw new Error(`Page Access Token required to subscribe IG account ${instagramId}`);
+  }
+  if (!pageId) {
+    throw new Error(`Page ID required to subscribe IG account ${instagramId}`);
   }
 
-  logger.info(reqId, "📡 Subscribing app to IG account", {
-    instagramId,
-  });
+  logger.info(reqId, "📡 Subscribing app to IG account", { pageId, instagramId });
 
   try {
     const res = await axios.post(
-      `${BASE}/${instagramId}/subscribed_apps`,
+      `${BASE}/${pageId}/subscribed_apps`,
       null,
       {
         params: {
           access_token: pageAccessToken,
-          subscribed_fields: "comments,messages,mentions"
+          subscribed_fields: "comments,messages,mentions",
         },
       }
     );
 
     logger.info(reqId, "✅ Subscription successful", {
+      pageId,
       instagramId,
       response: res.data,
     });
 
     return res.data;
   } catch (error) {
-    console.error(
-      "META SUBSCRIBE ERROR:",
-      JSON.stringify(error.response?.data, null, 2)
-    );
-
+    console.error("META SUBSCRIBE ERROR:", JSON.stringify(error.response?.data, null, 2));
+    logger.error(reqId, "❌ Subscription failed", {
+      pageId,
+      instagramId,
+      status: error.response?.status,
+      error: error.response?.data || error.message,
+    });
     throw error;
   }
 }
-/**
- * Checks webhook subscription status for an IG account.
- */
-async function checkSubscription(instagramId, pageAccessToken) {
-  const res = await axios.get(`${BASE}/${instagramId}/subscribed_apps`, {
+
+async function checkSubscription(pageId, pageAccessToken) {
+  const res = await axios.get(`${BASE}/${pageId}/subscribed_apps`, {
     params: { access_token: pageAccessToken },
   });
   return res.data;
 }
 
-/**
- * Sends a Direct Message from an Instagram Business account to a recipient.
- *
- * Security rules enforced here:
- *   1. ONLY Page Access Tokens are accepted — never user tokens.
- *   2. Token must be explicitly provided — no fallbacks, no globals.
- *   3. Both instagramId and recipientId must be present.
- *
- * @param {string} instagramId        - The IG Business account sending the message
- * @param {string} pageAccessToken    - The Page Access Token for this account (decrypted)
- * @param {string} recipientIgUserId  - The commenter's IG user ID
- * @param {string} messageText        - The DM body
- * @param {string} reqId              - Request ID for logging
- */
 async function sendDM({ instagramId, pageAccessToken, recipientIgUserId, messageText, reqId = "sys" }) {
-  // Strict token validation — no fallbacks
   if (!pageAccessToken) {
     throw new Error(
       `[sendDM] Page Access Token is required for IG account ${instagramId}. ` +
@@ -133,10 +93,6 @@ async function sendDM({ instagramId, pageAccessToken, recipientIgUserId, message
   return res.data;
 }
 
-/**
- * Debugs a token to verify scopes and expiry.
- * Uses App Access Token (appId|appSecret) as the access token.
- */
 async function debugToken(inputToken) {
   const appToken = `${config.meta.appId}|${config.meta.appSecret}`;
   const res = await axios.get(`${BASE}/debug_token`, {
@@ -145,9 +101,6 @@ async function debugToken(inputToken) {
   return res.data?.data || {};
 }
 
-/**
- * Exchanges an OAuth code for a User Access Token.
- */
 async function exchangeCodeForToken(code) {
   const res = await axios.get(`${BASE}/oauth/access_token`, {
     params: {
@@ -162,27 +115,23 @@ async function exchangeCodeForToken(code) {
   return token;
 }
 
-/**
- * Parses a Graph API error into a consistent shape.
- */
 function parseGraphError(error) {
   return {
     status: error.response?.status || 500,
     details: error.response?.data || { message: error.message || "Unknown error" },
   };
 }
+
 async function fetchUserPages(userAccessToken) {
-  // First try standard personal pages
   const res = await axios.get(`${BASE}/me/accounts`, {
     params: {
       access_token: userAccessToken,
       fields: "id,name,access_token,instagram_business_account",
     },
   });
-  
+
   let pages = res.data?.data || [];
 
-  // If no pages found, check business portfolios
   if (pages.length === 0) {
     const bizRes = await axios.get(`${BASE}/me/businesses`, {
       params: { access_token: userAccessToken, fields: "id" },
