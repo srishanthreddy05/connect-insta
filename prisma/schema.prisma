@@ -1,6 +1,4 @@
 // prisma/schema.prisma
-// Supports Firestore via @prisma/adapter-firestore or standard PostgreSQL.
-// Switch provider to "postgresql" for Render Postgres, or use Firestore SDK directly (see repositories).
 
 generator client {
   provider = "prisma-client-js"
@@ -25,35 +23,34 @@ model User {
 }
 
 model ConnectedAccount {
-  id                  String   @id @default(cuid())
-  userId              String
-  pageId              String   @unique
-  pageName            String
-  instagramId         String   @unique
-  instagramUsername   String?
-  pageAccessToken     String   // encrypted at rest
-  connectedAt         DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  isActive            Boolean  @default(true)
+  id                String   @id @default(cuid())
+  userId            String
+  pageId            String   @unique
+  pageName          String
+  instagramId       String   @unique
+  instagramUsername String?
+  pageAccessToken   String   // encrypted at rest
+  connectedAt       DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  isActive          Boolean  @default(true)
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   automations Automation[]
-  webhookEvents WebhookEvent[]
 
   @@map("connected_accounts")
 }
 
 model Automation {
-  id              String        @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   instagramId     String
   name            String
-  keywords        String[]      // e.g. ["price","pricing","cost"]
-  matchType       MatchType     @default(CONTAINS)
+  keywords        String[]
+  matchType       MatchType @default(CONTAINS)
   responseMessage String
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
@@ -62,17 +59,15 @@ model Automation {
 }
 
 model WebhookEvent {
-  id          String      @id @default(cuid())
-  instagramId String
-  eventType   String      // "comment", "message", "mention"
-  eventId     String      @unique // Meta's event/comment ID for deduplication
+  id          String    @id @default(cuid())
+  instagramId String                        // plain string — no FK, accepts any ID including test payloads
+  eventType   String
+  eventId     String    @unique
   payload     Json
-  processed   Boolean     @default(false)
+  processed   Boolean   @default(false)
   error       String?
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime  @default(now())
   processedAt DateTime?
-
-  connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
 
   @@index([instagramId])
   @@index([processed])
@@ -80,15 +75,15 @@ model WebhookEvent {
 }
 
 model SentDm {
-  id              String   @id @default(cuid())
-  instagramId     String
-  recipientId     String
-  automationId    String
-  messageText     String
-  metaMessageId   String?
-  sentAt          DateTime @default(now())
+  id            String   @id @default(cuid())
+  instagramId   String
+  recipientId   String
+  automationId  String
+  messageText   String
+  metaMessageId String?
+  sentAt        DateTime @default(now())
 
-  @@unique([instagramId, recipientId, automationId])  // prevent duplicate DMs per automation
+  @@unique([instagramId, recipientId, automationId])
   @@map("sent_dms")
 }
 
