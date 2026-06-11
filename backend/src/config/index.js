@@ -22,6 +22,8 @@ const config = {
   meta: {
     appId: required("APP_ID"),
     appSecret: required("APP_SECRET"),
+      igAppId: required("IG_APP_ID"),        // add this
+  igAppSecret: required("IG_APP_SECRET"), // add this
     redirectUri: required("REDIRECT_URI"),
     webhookVerifyToken: required("WEBHOOK_VERIFY_TOKEN"),
     graphVersion: "v25.0",

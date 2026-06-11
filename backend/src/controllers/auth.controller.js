@@ -11,7 +11,7 @@ const REQUIRED_SCOPES = [
   "public_profile",
   "pages_show_list",
   "pages_manage_metadata",
-  "pages_messaging",          // ✅ add this
+  "pages_messaging",
   "instagram_basic",
   "instagram_manage_messages",
   "instagram_manage_comments",
@@ -96,11 +96,10 @@ async function callback(req, res, next) {
         pageName: page.name,
         instagramId,
         instagramUsername: igUsername,
-        userAccessToken: userAccessToken, 
+        userAccessToken: userAccessToken,
         pageAccessToken: page.access_token,
       });
 
-      // ✅ Fix: pass page.id as first argument, not instagramId
       try {
         await metaService.subscribeAppToIG(page.id, instagramId, page.access_token, reqId);
         logger.info(reqId, `📡 Webhook subscription active`, { pageId: page.id, instagramId, page: page.name });
@@ -137,14 +136,15 @@ async function listConnectedAccounts(req, res, next) {
     next(err);
   }
 }
+
 function igTokenLogin(req, res) {
   const reqId = req.reqId;
   const userId = req.query.userId;
   if (!userId) return res.status(400).json({ ok: false, error: "Missing userId" });
 
   const params = new URLSearchParams({
-    client_id: config.meta.appId,
-    redirect_uri: `${config.meta.redirectUri.replace("/auth/callback", "")}/auth/ig-token/callback`,
+    client_id: config.meta.igAppId,       // IG app ID
+    redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
     scope: [
       "instagram_business_basic",
       "instagram_business_manage_messages",
@@ -167,13 +167,14 @@ async function igTokenCallback(req, res, next) {
   if (!code) return res.status(400).json({ ok: false, error: "Missing code" });
 
   try {
-    // Exchange code for short-lived token
-    const tokenRes = await axios.post("https://api.instagram.com/oauth/access_token", 
+    // Step 1: Exchange code for short-lived token
+    const tokenRes = await axios.post(
+      "https://api.instagram.com/oauth/access_token",
       new URLSearchParams({
-        client_id: config.meta.appId,
-        client_secret: config.meta.appSecret,
+        client_id: config.meta.igAppId,        // IG app ID
+        client_secret: config.meta.igAppSecret, // IG app secret
         grant_type: "authorization_code",
-        redirect_uri: `${config.meta.redirectUri.replace("/auth/callback", "")}/auth/ig-token/callback`,
+        redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
         code,
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
@@ -182,25 +183,36 @@ async function igTokenCallback(req, res, next) {
     const shortToken = tokenRes.data.access_token;
     const igUserId = tokenRes.data.user_id;
 
-    // Exchange for long-lived token (60 days)
+    logger.info(reqId, `✅ Short-lived IG token acquired`, { igUserId });
+
+    // Step 2: Exchange for long-lived token (60 days)
     const longRes = await axios.get("https://graph.instagram.com/access_token", {
       params: {
         grant_type: "ig_exchange_token",
-        client_secret: config.meta.appSecret,
+        client_secret: config.meta.igAppSecret, // IG app secret
         access_token: shortToken,
       },
     });
 
     const longToken = longRes.data.access_token;
+    const expiresIn = longRes.data.expires_in;
 
-    // Save to DB as userAccessToken
+    logger.info(reqId, `✅ Long-lived IG token acquired`, { igUserId, expiresIn });
+
+    // Step 3: Save to DB as userAccessToken
     await connectedAccountRepo.upsertIgToken({
       instagramId: String(igUserId),
       userAccessToken: longToken,
     });
 
-    logger.info(reqId, `✅ IG token saved`, { igUserId });
-    res.json({ ok: true, message: "Instagram token saved successfully", igUserId });
+    logger.info(reqId, `✅ IG token saved to DB`, { igUserId });
+
+    res.json({
+      ok: true,
+      message: "Instagram token saved successfully",
+      igUserId,
+      expiresIn,
+    });
 
   } catch (err) {
     logger.error(reqId, `❌ IG token callback failed`, { error: err?.response?.data || err.message });
