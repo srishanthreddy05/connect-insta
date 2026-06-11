@@ -9,19 +9,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  connectedAccounts ConnectedAccount[]
-  automations       Automation[]
-
-  @@map("users")
-}
-
 model ConnectedAccount {
   id                String   @id @default(cuid())
   userId            String
@@ -34,9 +21,9 @@ model ConnectedAccount {
   updatedAt         DateTime @updatedAt
   isActive          Boolean  @default(true)
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   automations Automation[]
 
+  @@index([userId])
   @@map("connected_accounts")
 }
 
@@ -52,15 +39,16 @@ model Automation {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
 
+  @@index([userId])
+  @@index([instagramId])
   @@map("automations")
 }
 
 model WebhookEvent {
   id          String    @id @default(cuid())
-  instagramId String                        // plain string — no FK, accepts any ID including test payloads
+  instagramId String
   eventType   String
   eventId     String    @unique
   payload     Json
