@@ -136,39 +136,50 @@ async function processWebhook(body, reqId) {
         keywords: automation.keywords,
       });
 
-      // ── Step 5: Duplicate DM guard ────────────────────────────────────
-      const { created: dmIsNew } = await sentDmRepo.recordIfNew({
+      // ── Step 5: Send DM ───────────────────────────────────────────────
+      const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
+
+      let dmResult;
+      try {
+        dmResult = await metaService.sendDM({
+          instagramId,
+          pageAccessToken: tokenToUse,
+          recipientIgUserId: commenterId,
+          messageText: automation.responseMessage,
+          reqId,
+        });
+      } catch (dmError) {
+        const subcode = dmError?.response?.data?.error?.error_subcode;
+        const code = dmError?.response?.data?.error?.code;
+
+        if (subcode === 2534022) {
+          // 24hr window closed — don't record as sent, allow retry later
+          logger.warn(reqId, `⚠️ DM outside 24hr window — skipping without recording`, {
+            commenterId,
+            eventId,
+          });
+          await webhookEventRepo.markProcessed(dbEvent.id, "24hr window closed").catch(() => {});
+          continue;
+        }
+
+        // Any other DM error — log and move on
+        logger.error(reqId, `❌ DM send failed`, {
+          eventId,
+          instagramId,
+          error: dmError?.response?.data || dmError.message,
+        });
+        await webhookEventRepo.markProcessed(dbEvent.id, dmError.message).catch(() => {});
+        continue;
+      }
+
+      // ── Step 6: Record DM only after successful send ──────────────────
+      await sentDmRepo.recordIfNew({
         instagramId,
         recipientId: commenterId,
         automationId: automation.id,
         messageText: automation.responseMessage,
-        metaMessageId: null,
+        metaMessageId: dmResult?.message_id,
       });
-
-      if (!dmIsNew) {
-        logger.info(reqId, `⏭️ DM already sent for this automation+recipient — skipping`, {
-          automationId: automation.id,
-          commenterId,
-        });
-        await webhookEventRepo.markProcessed(dbEvent.id);
-        continue;
-      }
-
-      // ── Step 6: Send DM ───────────────────────────────────────────────
-      const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
-      console.log('DEBUG TOKEN:', {
-        hasUserToken: !!connectedAccount.userAccessToken,
-        hasPageToken: !!connectedAccount.pageAccessToken,
-        tokenStart: tokenToUse?.substring(0, 20),
-      });
-
-     const dmResult = await metaService.sendDM({
-  instagramId,
-  pageAccessToken: "IGAAVSJhg0h5NBZAGFPT1VQZAW9McnVMNVFZAeXptOGhtd0NVVFFZALXJLZAUJpWHN3cGltQ2xoRW5IUEhKMzUwY082aHJYX0wyclhneGx3eWU2ZAC1kZAWhsdUEydkVid0V4RE14ZAmx2SlN2a0U2aWNEc0lPTU9TdGEtZAmxTcnNhWElqUQZDZD", // ✅ back to page token
-  recipientIgUserId: commenterId,
-  messageText: automation.responseMessage,
-  reqId,
-});
 
       // ── Step 7: Mark event done ───────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);
@@ -178,6 +189,7 @@ async function processWebhook(body, reqId) {
         automationId: automation.id,
         dmMessageId: dmResult?.message_id,
       });
+
     } catch (err) {
       logger.error(reqId, `❌ Error processing event`, {
         eventId,
