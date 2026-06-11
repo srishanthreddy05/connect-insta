@@ -11,15 +11,15 @@ const BASE = config.meta.graphBase;
  * Fetches all Facebook Pages the authenticated user manages.
  * Used during OAuth to discover linked Instagram accounts.
  */
-async function fetchUserPages(userAccessToken) {
-  const res = await axios.get(`${BASE}/me/accounts`, {
-    params: {
-      access_token: userAccessToken,
-      fields: "id,name,access_token,instagram_business_account",
-    },
-  });
-  return res.data?.data || [];
-}
+// async function fetchUserPages(userAccessToken) {
+//   const res = await axios.get(`${BASE}/me/accounts`, {
+//     params: {
+//       access_token: userAccessToken,
+//       fields: "id,name,access_token,instagram_business_account",
+//     },
+//   });
+//   return res.data?.data || [];
+// }
 
 /**
  * Fetches basic Instagram account info.
@@ -38,22 +38,52 @@ async function fetchIgAccount(instagramId, pageAccessToken) {
  * Subscribes the app to webhook events for a specific Instagram account.
  * MUST use Page Access Token — never a User token.
  */
+/**
+ * Subscribes the app to webhook events for a specific Instagram account.
+ * MUST use Page Access Token.
+ */
 async function subscribeAppToIG(instagramId, pageAccessToken, reqId = "sys") {
   if (!pageAccessToken) {
-    throw new Error(`Page Access Token required to subscribe IG account ${instagramId}`);
+    throw new Error(
+      `Page Access Token required to subscribe IG account ${instagramId}`
+    );
   }
-  logger.info(reqId, `📡 Subscribing app to IG account`, { instagramId });
-  const res = await axios.post(
-    `${BASE}/${instagramId}/subscribed_apps`,
-    {},
-    {
-      params: {
-        access_token: pageAccessToken,
-        subscribed_fields: "comments,messages,mentions",
-      },
-    }
-  );
-  return res.data;
+
+  logger.info(reqId, "📡 Subscribing app to IG account", {
+    instagramId,
+  });
+
+  try {
+    const res = await axios.post(
+      `${BASE}/${instagramId}/subscribed_apps`,
+      null,
+      {
+        params: {
+          access_token: pageAccessToken,
+        },
+      }
+    );
+
+    logger.info(reqId, "✅ Subscription successful", {
+      instagramId,
+      response: res.data,
+    });
+
+    return res.data;
+  } catch (error) {
+    console.error(
+      "META SUBSCRIBE ERROR:",
+      JSON.stringify(error.response?.data, null, 2)
+    );
+
+    logger.error(reqId, "❌ Subscription failed", {
+      instagramId,
+      status: error.response?.status,
+      error: error.response?.data || error.message,
+    });
+
+    throw error;
+  }
 }
 
 /**
