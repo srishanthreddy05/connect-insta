@@ -10,6 +10,7 @@ const REQUIRED_SCOPES = [
   "public_profile",
   "pages_show_list",
   "pages_manage_metadata",
+  "pages_messaging",          // ✅ add this
   "instagram_basic",
   "instagram_manage_messages",
   "instagram_manage_comments",

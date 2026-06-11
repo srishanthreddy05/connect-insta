@@ -34,7 +34,7 @@ async function subscribeAppToIG(pageId, instagramId, pageAccessToken, reqId = "s
       {
         params: {
           access_token: pageAccessToken,
-          subscribed_fields: "feed,messages",
+          subscribed_fields: "feed",
         },
       }
     );
