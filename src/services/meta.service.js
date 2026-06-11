@@ -147,6 +147,38 @@ function parseGraphError(error) {
     details: error.response?.data || { message: error.message || "Unknown error" },
   };
 }
+async function fetchUserPages(userAccessToken) {
+  // First try standard personal pages
+  const res = await axios.get(`${BASE}/me/accounts`, {
+    params: {
+      access_token: userAccessToken,
+      fields: "id,name,access_token,instagram_business_account",
+    },
+  });
+  
+  let pages = res.data?.data || [];
+
+  // If no pages found, check business portfolios
+  if (pages.length === 0) {
+    const bizRes = await axios.get(`${BASE}/me/businesses`, {
+      params: { access_token: userAccessToken, fields: "id" },
+    });
+
+    const businesses = bizRes.data?.data || [];
+
+    for (const biz of businesses) {
+      const ownedRes = await axios.get(`${BASE}/${biz.id}/owned_pages`, {
+        params: {
+          access_token: userAccessToken,
+          fields: "id,name,access_token,instagram_business_account",
+        },
+      });
+      pages = pages.concat(ownedRes.data?.data || []);
+    }
+  }
+
+  return pages;
+}
 
 module.exports = {
   fetchUserPages,

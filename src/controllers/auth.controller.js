@@ -5,7 +5,6 @@ const config = require("../config");
 const metaService = require("../services/meta.service");
 const connectedAccountRepo = require("../repositories/connectedAccount.repository");
 const { logger, maskToken, normalizeToken } = require("../utils/logger");
-
 const REQUIRED_SCOPES = [
   "public_profile",
   "pages_show_list",
@@ -13,8 +12,8 @@ const REQUIRED_SCOPES = [
   "instagram_basic",
   "instagram_manage_messages",
   "instagram_manage_comments",
+  "business_management", // add this
 ];
-
 /**
  * GET /auth/login
  * Initiates Meta OAuth. In a multi-tenant setup, pass userId as state param
