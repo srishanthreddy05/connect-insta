@@ -16,7 +16,8 @@ model ConnectedAccount {
   pageName          String
   instagramId       String   @unique
   instagramUsername String?
-  pageAccessToken   String   // encrypted at rest
+  pageAccessToken   String
+  userAccessToken   String?  // ✅ add this
   connectedAt       DateTime @default(now())
   updatedAt         DateTime @updatedAt
   isActive          Boolean  @default(true)

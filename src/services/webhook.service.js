@@ -189,13 +189,14 @@ async function processWebhook(body, reqId) {
       }
 
       // ── Step 6: Send DM using ONLY Page Access Token ───────────────────
-      const dmResult = await metaService.sendDM({
-        instagramId,
-        pageAccessToken: connectedAccount.pageAccessToken, // strictly Page token, decrypted
-        recipientIgUserId: commenterId,
-        messageText: automation.responseMessage,
-        reqId,
-      });
+ // ── Step 6: Send DM using Instagram User Access Token ─────────────
+const dmResult = await metaService.sendDM({
+  instagramId,
+  pageAccessToken: connectedAccount.userAccessToken || connectedAccount.pageAccessToken, // ✅ user token first
+  recipientIgUserId: commenterId,
+  messageText: automation.responseMessage,
+  reqId,
+});
 
       // ── Step 7: Mark event done ────────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);

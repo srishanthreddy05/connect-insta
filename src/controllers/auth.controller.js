@@ -95,6 +95,7 @@ async function callback(req, res, next) {
         pageName: page.name,
         instagramId,
         instagramUsername: igUsername,
+        userAccessToken: userAccessToken, 
         pageAccessToken: page.access_token,
       });
 
