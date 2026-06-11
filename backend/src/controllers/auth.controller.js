@@ -143,7 +143,7 @@ function igTokenLogin(req, res) {
   if (!userId) return res.status(400).json({ ok: false, error: "Missing userId" });
 
   const params = new URLSearchParams({
-    client_id: config.meta.appId,         // main app ID
+    client_id: config.meta.igAppId,
     redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
     scope: [
       "instagram_business_basic",
@@ -155,8 +155,8 @@ function igTokenLogin(req, res) {
     state: userId,
   });
 
-  const url = `https://api.instagram.com/oauth/authorize?${params}`;
-  logger.info(reqId, `🔐 Redirecting to Instagram OAuth`, { userId });
+  const url = `https://www.instagram.com/oauth/authorize?${params}`;
+  logger.info(reqId, `🔐 Redirecting to Instagram Business OAuth`, { userId });
   res.redirect(url);
 }
 
@@ -171,8 +171,8 @@ async function igTokenCallback(req, res, next) {
     const tokenRes = await axios.post(
       "https://api.instagram.com/oauth/access_token",
       new URLSearchParams({
-        client_id: config.meta.appId,         // main app ID
-        client_secret: config.meta.appSecret,  // main app secret
+        client_id: config.meta.igAppId,
+        client_secret: config.meta.igAppSecret,
         grant_type: "authorization_code",
         redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
         code,
@@ -189,7 +189,7 @@ async function igTokenCallback(req, res, next) {
     const longRes = await axios.get("https://graph.instagram.com/access_token", {
       params: {
         grant_type: "ig_exchange_token",
-        client_secret: config.meta.appSecret,  // main app secret
+        client_secret: config.meta.igAppSecret,
         access_token: shortToken,
       },
     });
