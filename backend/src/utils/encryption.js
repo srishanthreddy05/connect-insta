@@ -27,7 +27,12 @@ function encrypt(plaintext) {
  */
 function decrypt(stored) {
   if (!stored) return "";
-  const [ivHex, tagHex, cipherHex] = stored.split(":");
+  
+  // If not in encrypted format, return as-is (raw token)
+  const parts = stored.split(":");
+  if (parts.length !== 3) return stored;
+
+  const [ivHex, tagHex, cipherHex] = parts;
   const key = Buffer.from(config.encryption.key, "hex");
   const iv = Buffer.from(ivHex, "hex");
   const authTag = Buffer.from(tagHex, "hex");
