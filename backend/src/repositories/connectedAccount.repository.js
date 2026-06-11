@@ -26,6 +26,7 @@ async function upsertIgToken({ instagramId, userAccessToken }) {
   });
 }
 
+
 async function findByPageId(pageId) {
   const db = getDb();
   const account = await db.connectedAccount.findUnique({
@@ -103,4 +104,4 @@ async function deactivate(instagramId) {
   });
 }
 
-module.exports = { findByInstagramId, findByPageId, findAllByUserId, upsert, deactivate };
+module.exports = { findByInstagramId, findByPageId, findAllByUserId, upsert, deactivate, upsertIgToken };
