@@ -201,9 +201,9 @@ async function igTokenCallback(req, res, next) {
 
     // Step 3: Save to DB as userAccessToken
     await connectedAccountRepo.upsertIgToken({
-      instagramId: String(igUserId),
-      userAccessToken: longToken,
-    });
+  userId,
+  userAccessToken: longToken,
+});
 
     logger.info(reqId, `✅ IG token saved to DB`, { igUserId });
 

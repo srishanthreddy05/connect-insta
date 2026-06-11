@@ -15,17 +15,20 @@ async function findByInstagramId(instagramId) {
     userAccessToken: account.userAccessToken ? decrypt(account.userAccessToken) : null,
   };
 }
-async function upsertIgToken({ instagramId, userAccessToken }) {
+async function upsertIgToken({ userId, userAccessToken }) {
   const db = getDb();
+  const existing = await db.connectedAccount.findFirst({
+    where: { userId },
+  });
+  if (!existing) throw new Error(`No connected account found for userId ${userId}`);
   return db.connectedAccount.update({
-    where: { instagramId },
+    where: { id: existing.id },
     data: {
       userAccessToken: encrypt(userAccessToken),
       updatedAt: new Date(),
     },
   });
 }
-
 
 async function findByPageId(pageId) {
   const db = getDb();
