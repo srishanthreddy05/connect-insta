@@ -144,7 +144,7 @@ function igTokenLogin(req, res) {
 
   const params = new URLSearchParams({
     client_id: config.meta.igAppId,
-    redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
+    redirect_uri: config.meta.igRedirectUri,
     scope: [
       "instagram_business_basic",
       "instagram_business_manage_messages",
@@ -174,7 +174,7 @@ async function igTokenCallback(req, res, next) {
         client_id: config.meta.igAppId,
         client_secret: config.meta.igAppSecret,
         grant_type: "authorization_code",
-        redirect_uri: `https://connect-insta.onrender.com/auth/ig-token/callback`,
+        redirect_uri: config.meta.igRedirectUri,
         code,
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
