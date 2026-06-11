@@ -8,27 +8,12 @@ const { findMatchingAutomation } = require("./automation.service");
 const metaService = require("./meta.service");
 const { logger } = require("../utils/logger");
 
-/**
- * Parses the raw Meta webhook body into a normalized list of comment events.
- * Handles both real payloads and test injection payloads.
- *
- * Returns an array of:
- * {
- *   instagramId: string,  // which IG account this event is for
- *   eventId:     string,  // stable ID for deduplication
- *   eventType:   string,  // "comment" | "message" | "mention" | "unknown"
- *   commentText: string,
- *   commenterId: string|null,
- *   mediaId:     string|null,
- *   rawValue:    object,
- * }
- */
 function parseWebhookBody(body) {
   const events = [];
   const entries = Array.isArray(body?.entry) ? body.entry : [];
 
   for (const entry of entries) {
-    const igAccountId = entry.id; // This is the IG Business Account ID
+    const igAccountId = entry.id;
     const changes = Array.isArray(entry.changes) ? entry.changes : [];
 
     for (const change of changes) {
@@ -41,7 +26,6 @@ function parseWebhookBody(body) {
         value.message_id ||
         `${igAccountId}:${field}:${value.created_time || Date.now()}`;
 
-      // Classify event type
       const isComment =
         field === "comments" ||
         value.item === "comment" ||
@@ -75,24 +59,6 @@ function parseWebhookBody(body) {
   return events;
 }
 
-/**
- * Main webhook processor.
- *
- * Pipeline:
- *   1. Parse raw body into normalized events
- *   2. For each event:
- *      a. Deduplicate via DB (durable, survives restarts)
- *      b. Look up the ConnectedAccount for this IG account ID
- *      c. Find a matching automation
- *      d. Guard against duplicate DMs
- *      e. Send DM using ONLY the Page Access Token for this account
- *      f. Mark event as processed
- *
- * This function is called asynchronously — the HTTP 200 has already been sent.
- *
- * @param {object} body   - Raw webhook request body
- * @param {string} reqId  - Request ID for tracing
- */
 async function processWebhook(body, reqId) {
   const events = parseWebhookBody(body);
 
@@ -104,7 +70,7 @@ async function processWebhook(body, reqId) {
   for (const event of events) {
     const { instagramId, eventId, eventType, commentText, commenterId } = event;
 
-    // ── Step 1: Deduplication (DB-level, durable) ──────────────────────────
+    // ── Step 1: Deduplication ──────────────────────────────────────────────
     const { created, event: dbEvent } = await webhookEventRepo.createIfNew({
       instagramId,
       eventType,
@@ -120,7 +86,7 @@ async function processWebhook(body, reqId) {
     logger.info(reqId, `📥 Processing event`, { eventId, eventType, instagramId, commentText });
 
     try {
-      // ── Step 2: Only process comment events ────────────────────────────
+      // ── Step 2: Only process comment events ───────────────────────────
       if (eventType !== "comment") {
         logger.info(reqId, `ℹ️ Non-comment event — skipping automation`, { eventType, eventId });
         await webhookEventRepo.markProcessed(dbEvent.id);
@@ -139,7 +105,7 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
-      // ── Step 3: Look up connected account (no hardcoded IDs) ───────────
+      // ── Step 3: Look up connected account ─────────────────────────────
       const connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
       if (!connectedAccount) {
         logger.warn(reqId, `⚠️ No connected account found for IG ID ${instagramId}`, { eventId });
@@ -153,7 +119,7 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
-      // ── Step 4: Find matching automation ───────────────────────────────
+      // ── Step 4: Find matching automation ──────────────────────────────
       const automation = await findMatchingAutomation(instagramId, commentText);
       if (!automation) {
         logger.info(reqId, `ℹ️ No matching automation for comment`, {
@@ -170,13 +136,13 @@ async function processWebhook(body, reqId) {
         keywords: automation.keywords,
       });
 
-      // ── Step 5: Duplicate DM guard ─────────────────────────────────────
+      // ── Step 5: Duplicate DM guard ────────────────────────────────────
       const { created: dmIsNew } = await sentDmRepo.recordIfNew({
         instagramId,
         recipientId: commenterId,
         automationId: automation.id,
         messageText: automation.responseMessage,
-        metaMessageId: null, // will be updated after send
+        metaMessageId: null,
       });
 
       if (!dmIsNew) {
@@ -188,33 +154,23 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
-      // ── Step 6: Send DM using ONLY Page Access Token ───────────────────
- // ── Step 6: Send DM using Instagram User Access Token ─────────────
+      // ── Step 6: Send DM ───────────────────────────────────────────────
+      const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
+      console.log('DEBUG TOKEN:', {
+        hasUserToken: !!connectedAccount.userAccessToken,
+        hasPageToken: !!connectedAccount.pageAccessToken,
+        tokenStart: tokenToUse?.substring(0, 20),
+      });
 
- // ── Step 6: Send DM ────────────────────────────────────────────────
-console.log('DEBUG TOKEN:', {
-  hasUserToken: !!connectedAccount.userAccessToken,
-  hasPageToken: !!connectedAccount.pageAccessToken,
-  userTokenStart: connectedAccount.userAccessToken?.substring(0, 20),
-  pageTokenStart: connectedAccount.pageAccessToken?.substring(0, 20),
-});
+      const dmResult = await metaService.sendDM({
+        instagramId,
+        pageAccessToken: tokenToUse,
+        recipientIgUserId: commenterId,
+        messageText: automation.responseMessage,
+        reqId,
+      });
 
-const dmResult = await metaService.sendDM({
-  instagramId,
-  pageAccessToken: connectedAccount.userAccessToken || connectedAccount.pageAccessToken,
-  recipientIgUserId: commenterId,
-  messageText: automation.responseMessage,
-  reqId,
-});
-const dmResult = await metaService.sendDM({
-  instagramId,
-  pageAccessToken: connectedAccount.userAccessToken || connectedAccount.pageAccessToken, // ✅ user token first
-  recipientIgUserId: commenterId,
-  messageText: automation.responseMessage,
-  reqId,
-});
-
-      // ── Step 7: Mark event done ────────────────────────────────────────
+      // ── Step 7: Mark event done ───────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);
 
       logger.info(reqId, `✅ Event fully processed`, {
@@ -228,7 +184,6 @@ const dmResult = await metaService.sendDM({
         instagramId,
         error: err?.response?.data || err.message,
       });
-      // Mark as processed-with-error so it doesn't re-process but we have a record
       await webhookEventRepo.markProcessed(dbEvent.id, err.message).catch(() => {});
     }
   }
