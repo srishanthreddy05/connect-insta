@@ -64,24 +64,15 @@ async function checkSubscription(pageId, pageAccessToken) {
   });
   return res.data;
 }
-
 async function sendDM({ instagramId, pageAccessToken, recipientIgUserId, messageText, reqId = "sys" }) {
-  if (!pageAccessToken) {
-    throw new Error(
-      `[sendDM] Page Access Token is required for IG account ${instagramId}. ` +
-        `Never fall back to a User Access Token for DM sending.`
-    );
-  }
+  if (!pageAccessToken) throw new Error(`[sendDM] Page Access Token required`);
   if (!instagramId) throw new Error("[sendDM] instagramId is required");
   if (!recipientIgUserId) throw new Error("[sendDM] recipientIgUserId is required");
 
-  logger.info(reqId, `📨 Sending DM`, {
-    fromIgAccount: instagramId,
-    to: recipientIgUserId,
-  });
+  logger.info(reqId, `📨 Sending DM`, { fromIgAccount: instagramId, to: recipientIgUserId });
 
   const res = await axios.post(
-    `${BASE}/${instagramId}/messages`,
+    `https://graph.instagram.com/v25.0/me/messages`,  // ✅ correct endpoint
     {
       recipient: { id: recipientIgUserId },
       message: { text: messageText },
