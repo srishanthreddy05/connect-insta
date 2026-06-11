@@ -69,4 +69,40 @@ router.get("/", (_req, res) => {
   });
 });
 
+router.get("/privacy", (_req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Privacy Policy</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 60px auto; padding: 0 20px; color: #333; line-height: 1.7; }
+    h1 { font-size: 2rem; } h2 { margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy</h1>
+  <p>Last updated: June 2026</p>
+
+  <h2>1. What We Collect</h2>
+  <p>We collect your Instagram Business account information (username, account ID) and Facebook Page details when you connect your account via OAuth.</p>
+
+  <h2>2. How We Use It</h2>
+  <p>We use your account data solely to operate automations you configure — such as sending automated DMs in response to comments on your posts.</p>
+
+  <h2>3. Data Storage</h2>
+  <p>Access tokens are encrypted at rest. We do not sell or share your data with third parties.</p>
+
+  <h2>4. Meta Platform Data</h2>
+  <p>We access Instagram and Facebook data through the official Meta Graph API. We comply with <a href="https://developers.facebook.com/policy/">Meta's Platform Policy</a>.</p>
+
+  <h2>5. Data Deletion</h2>
+  <p>You can disconnect your Instagram account at any time, which deletes all associated tokens and data from our system.</p>
+
+  <h2>6. Contact</h2>
+  <p>For any privacy questions, email us at: <strong>srishanthreddyy05@gmail.com</strong></p>
+</body>
+</html>`);
+});
+
 module.exports = router;
