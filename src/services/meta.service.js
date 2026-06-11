@@ -60,6 +60,7 @@ async function subscribeAppToIG(instagramId, pageAccessToken, reqId = "sys") {
       {
         params: {
           access_token: pageAccessToken,
+          subscribed_fields: "comments,messages,mentions"
         },
       }
     );
@@ -76,16 +77,9 @@ async function subscribeAppToIG(instagramId, pageAccessToken, reqId = "sys") {
       JSON.stringify(error.response?.data, null, 2)
     );
 
-    logger.error(reqId, "❌ Subscription failed", {
-      instagramId,
-      status: error.response?.status,
-      error: error.response?.data || error.message,
-    });
-
     throw error;
   }
 }
-
 /**
  * Checks webhook subscription status for an IG account.
  */
