@@ -8,7 +8,8 @@ const routes = require("./routes");
 const { errorHandler, attachReqId } = require("./middleware/errorHandler");
 
 const app = express();
-
+const cors = require('cors');
+app.use(cors({ origin: '*' })); // tighten this later
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());

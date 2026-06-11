@@ -68,6 +68,11 @@ router.get("/", (_req, res) => {
     },
   });
 });
+const path = require('path');
+
+router.get('/app', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../../public/index.html'));
+});
 
 router.get("/privacy", (_req, res) => {
   res.send(`<!DOCTYPE html>
