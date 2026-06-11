@@ -1,5 +1,6 @@
 // src/controllers/auth.controller.js
 "use strict";
+const axios = require("axios");
 
 const config = require("../config");
 const metaService = require("../services/meta.service");
@@ -136,5 +137,75 @@ async function listConnectedAccounts(req, res, next) {
     next(err);
   }
 }
+function igTokenLogin(req, res) {
+  const reqId = req.reqId;
+  const userId = req.query.userId;
+  if (!userId) return res.status(400).json({ ok: false, error: "Missing userId" });
 
-module.exports = { login, callback, listConnectedAccounts };
+  const params = new URLSearchParams({
+    client_id: config.meta.appId,
+    redirect_uri: `${config.meta.redirectUri.replace("/auth/callback", "")}/auth/ig-token/callback`,
+    scope: [
+      "instagram_business_basic",
+      "instagram_business_manage_messages",
+      "instagram_business_manage_comments",
+      "instagram_business_content_publish",
+    ].join(","),
+    response_type: "code",
+    state: userId,
+  });
+
+  const url = `https://api.instagram.com/oauth/authorize?${params}`;
+  logger.info(reqId, `🔐 Redirecting to Instagram OAuth`, { userId });
+  res.redirect(url);
+}
+
+async function igTokenCallback(req, res, next) {
+  const reqId = req.reqId;
+  const { code, state: userId } = req.query;
+
+  if (!code) return res.status(400).json({ ok: false, error: "Missing code" });
+
+  try {
+    // Exchange code for short-lived token
+    const tokenRes = await axios.post("https://api.instagram.com/oauth/access_token", 
+      new URLSearchParams({
+        client_id: config.meta.appId,
+        client_secret: config.meta.appSecret,
+        grant_type: "authorization_code",
+        redirect_uri: `${config.meta.redirectUri.replace("/auth/callback", "")}/auth/ig-token/callback`,
+        code,
+      }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+
+    const shortToken = tokenRes.data.access_token;
+    const igUserId = tokenRes.data.user_id;
+
+    // Exchange for long-lived token (60 days)
+    const longRes = await axios.get("https://graph.instagram.com/access_token", {
+      params: {
+        grant_type: "ig_exchange_token",
+        client_secret: config.meta.appSecret,
+        access_token: shortToken,
+      },
+    });
+
+    const longToken = longRes.data.access_token;
+
+    // Save to DB as userAccessToken
+    await connectedAccountRepo.upsertIgToken({
+      instagramId: String(igUserId),
+      userAccessToken: longToken,
+    });
+
+    logger.info(reqId, `✅ IG token saved`, { igUserId });
+    res.json({ ok: true, message: "Instagram token saved successfully", igUserId });
+
+  } catch (err) {
+    logger.error(reqId, `❌ IG token callback failed`, { error: err?.response?.data || err.message });
+    next(err);
+  }
+}
+
+module.exports = { login, callback, listConnectedAccounts, igTokenLogin, igTokenCallback };

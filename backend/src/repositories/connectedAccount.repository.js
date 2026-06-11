@@ -15,6 +15,16 @@ async function findByInstagramId(instagramId) {
     userAccessToken: account.userAccessToken ? decrypt(account.userAccessToken) : null,
   };
 }
+async function upsertIgToken({ instagramId, userAccessToken }) {
+  const db = getDb();
+  return db.connectedAccount.update({
+    where: { instagramId },
+    data: {
+      userAccessToken: encrypt(userAccessToken),
+      updatedAt: new Date(),
+    },
+  });
+}
 
 async function findByPageId(pageId) {
   const db = getDb();

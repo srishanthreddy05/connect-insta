@@ -137,8 +137,7 @@ async function processWebhook(body, reqId) {
       });
 
       // ── Step 5: Send DM ───────────────────────────────────────────────
-      const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
-
+     const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
       let dmResult;
       try {
         dmResult = await metaService.sendDM({

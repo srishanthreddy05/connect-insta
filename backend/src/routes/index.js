@@ -10,6 +10,8 @@ const automationCtrl = require("../controllers/automation.controller");
 const adminCtrl = require("../controllers/admin.controller");
 const { requireAuth } = require("../middleware/auth");
 
+router.get("/auth/ig-token", authCtrl.igTokenLogin);
+router.get("/auth/ig-token/callback", authCtrl.igTokenCallback);
 // ── Webhook ────────────────────────────────────────────────────────────────
 // Public — Meta must reach these without auth
 router.get("/webhook", webhookCtrl.verify);
