@@ -624,34 +624,78 @@
   <div class="modal-overlay" id="create-modal">
     <div class="modal">
       <div class="modal-title">New automation</div>
+
       <div class="form-group">
         <label>Name</label>
         <input type="text" id="f-name" placeholder="e.g. Product inquiry reply" />
       </div>
+
       <div class="form-group">
         <label>Instagram account</label>
         <select id="f-account"></select>
       </div>
+
+      <!-- Trigger Type Selector -->
       <div class="form-group">
-        <label>Keywords <span style="color:var(--muted);font-weight:400;">(press Enter to add)</span></label>
-        <div class="tag-input-wrap" id="keyword-wrap" onclick="document.getElementById('kw-input').focus()">
-          <input type="text" id="kw-input" placeholder="Type a keyword and press Enter"
-            onkeydown="handleKeyword(event)" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Match type</label>
-        <select id="f-match">
-          <option value="CONTAINS">Contains (comment includes keyword)</option>
-          <option value="EXACT">Exact match</option>
-          <option value="STARTS_WITH">Starts with keyword</option>
+        <label>Trigger type</label>
+        <select id="f-trigger-type" onchange="toggleFormMode()">
+          <option value="COMMENT">Instagram Comment → Auto DM</option>
+          <option value="DM">Instagram DM → Conversational Flow</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>DM response message</label>
-        <textarea id="f-response"
-          placeholder="Hey! Thanks for your interest. Here's the info you asked for..."></textarea>
+
+      <!-- COMMENT fields -->
+      <div id="comment-fields">
+        <div class="form-group">
+          <label>Keywords <span style="color:var(--muted);font-weight:400;">(press Enter to add)</span></label>
+          <div class="tag-input-wrap" id="keyword-wrap" onclick="document.getElementById('kw-input').focus()">
+            <input type="text" id="kw-input" placeholder="Type a keyword and press Enter"
+              onkeydown="handleKeyword(event)" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Match type</label>
+          <select id="f-match">
+            <option value="CONTAINS">Contains</option>
+            <option value="EXACT">Exact match</option>
+            <option value="STARTS_WITH">Starts with</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>DM response message</label>
+          <textarea id="f-response" placeholder="Hey! Thanks for your interest..."></textarea>
+        </div>
       </div>
+
+      <!-- DM FLOW fields -->
+      <div id="dm-fields" style="display:none;">
+        <div class="form-group">
+          <label>Trigger words <span style="color:var(--muted);font-weight:400;">(press Enter to add)</span></label>
+          <div class="tag-input-wrap" id="dm-trigger-wrap"
+            onclick="document.getElementById('dm-trigger-input').focus()">
+            <input type="text" id="dm-trigger-input" placeholder="e.g. hi, hello, hey"
+              onkeydown="handleDMTrigger(event)" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Greeting message</label>
+          <textarea id="f-greeting"
+            placeholder="Hey! 👋 How can I help you?&#10;&#10;1. Pricing&#10;2. Details"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Option 1 reply</label>
+          <textarea id="f-choice-1" placeholder="💰 Our pricing: Basic $99/mo..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Option 2 reply</label>
+          <textarea id="f-choice-2" placeholder="📋 Details: We help automate..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Fallback message (invalid input)</label>
+          <input type="text" id="f-fallback" placeholder="Please reply with 1 or 2" />
+        </div>
+      </div>
+
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
         <button class="btn" onclick="closeModal()">Cancel</button>
         <button class="btn btn-primary" onclick="createAutomation()">Create automation</button>
@@ -754,7 +798,11 @@
         </div>
       </div>
       <div class="keywords">${(a.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
-      <div class="response-preview">💬 "${a.responseMessage}"</div>
+      <div class="response-preview">
+        ${a.triggerType === 'DM'
+          ? `🤖 DM Flow: "${a.flowSteps?.greeting || ''}"`
+          : `💬 "${a.responseMessage}"`}
+      </div>
     </div>
   `).join('');
     }
@@ -781,9 +829,17 @@
 
     function openCreateModal() {
       keywords.length = 0;
+      dmTriggers.length = 0;
       document.getElementById('keyword-wrap').querySelectorAll('.keyword-tag').forEach(t => t.remove());
+      document.getElementById('dm-trigger-wrap').querySelectorAll('.keyword-tag').forEach(t => t.remove());
       document.getElementById('f-name').value = '';
       document.getElementById('f-response').value = '';
+      document.getElementById('f-greeting').value = '';
+      document.getElementById('f-choice-1').value = '';
+      document.getElementById('f-choice-2').value = '';
+      document.getElementById('f-fallback').value = '';
+      document.getElementById('f-trigger-type').value = 'COMMENT';
+      toggleFormMode();
       populateAccountSelect();
       document.getElementById('create-modal').classList.add('open');
     }
@@ -812,16 +868,48 @@
     async function createAutomation() {
       const name = document.getElementById('f-name').value.trim();
       const instagramId = document.getElementById('f-account').value;
-      const matchType = document.getElementById('f-match').value;
-      const responseMessage = document.getElementById('f-response').value.trim();
-      if (!name || !instagramId || !keywords.length || !responseMessage) {
-        toast('Fill in all fields and add at least one keyword', 'error'); return;
+      const triggerType = document.getElementById('f-trigger-type').value;
+
+      if (!name || !instagramId) { toast('Fill in name and account', 'error'); return; }
+
+      let body = { name, instagramId, triggerType };
+
+      if (triggerType === 'COMMENT') {
+        const matchType = document.getElementById('f-match').value;
+        const responseMessage = document.getElementById('f-response').value.trim();
+        if (!keywords.length || !responseMessage) {
+          toast('Add keywords and a response message', 'error'); return;
+        }
+        body = { ...body, keywords, matchType, responseMessage };
+
+      } else {
+        // DM flow
+        const greeting = document.getElementById('f-greeting').value.trim();
+        const choice1 = document.getElementById('f-choice-1').value.trim();
+        const choice2 = document.getElementById('f-choice-2').value.trim();
+        const fallback = document.getElementById('f-fallback').value.trim();
+
+        if (!dmTriggers.length || !greeting || !choice1 || !choice2) {
+          toast('Fill in trigger words, greeting, and both option replies', 'error'); return;
+        }
+
+        body = {
+          ...body,
+          keywords: dmTriggers,
+          matchType: 'CONTAINS',
+          responseMessage: '',
+          flowSteps: {
+            triggers: dmTriggers,
+            greeting,
+            choices: { '1': choice1, '2': choice2 },
+            fallback: fallback || 'Please reply with 1 or 2'
+          }
+        };
       }
+
       try {
         const r = await fetch(`${BASE}/automations`, {
-          method: 'POST',
-          headers: headers(),
-          body: JSON.stringify({ name, instagramId, keywords, matchType, responseMessage })
+          method: 'POST', headers: headers(), body: JSON.stringify(body)
         });
         const data = await r.json();
         if (!data.ok) { toast(data.error || 'Failed to create', 'error'); return; }
@@ -829,8 +917,8 @@
         closeModal();
         loadAutomations();
       } catch (e) { toast('Network error', 'error'); }
-    }
 
+    }
     async function deleteAutomation(id) {
       if (!confirm('Delete this automation?')) return;
       try {
@@ -866,6 +954,31 @@
         });
       }
       window.history.replaceState({}, '', window.location.pathname);
+    }
+
+    const dmTriggers = [];
+
+    function toggleFormMode() {
+      const type = document.getElementById('f-trigger-type').value;
+      document.getElementById('comment-fields').style.display = type === 'COMMENT' ? 'block' : 'none';
+      document.getElementById('dm-fields').style.display = type === 'DM' ? 'block' : 'none';
+    }
+
+    function handleDMTrigger(e) {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().toLowerCase();
+        if (!val || dmTriggers.includes(val)) { e.target.value = ''; return; }
+        dmTriggers.push(val);
+        const tag = document.createElement('span');
+        tag.className = 'keyword-tag';
+        tag.style.cursor = 'pointer';
+        tag.textContent = val;
+        tag.onclick = () => { dmTriggers.splice(dmTriggers.indexOf(val), 1); tag.remove(); };
+        document.getElementById('dm-trigger-wrap').insertBefore(tag, document.getElementById('dm-trigger-input'));
+        e.target.value = '';
+      }
+
     }
   </script>
 </body>

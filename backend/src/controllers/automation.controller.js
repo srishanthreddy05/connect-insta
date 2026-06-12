@@ -34,12 +34,22 @@ async function list(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { instagramId, name, keywords, matchType, responseMessage } = req.body;
+    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps } = req.body;
 
     if (!instagramId) return res.status(400).json({ ok: false, error: "instagramId is required" });
     if (!name) return res.status(400).json({ ok: false, error: "name is required" });
-    if (!keywords?.length) return res.status(400).json({ ok: false, error: "keywords array is required" });
-    if (!responseMessage) return res.status(400).json({ ok: false, error: "responseMessage is required" });
+
+    const resolvedTriggerType = triggerType || "COMMENT";
+    if (!["COMMENT", "DM"].includes(resolvedTriggerType)) {
+      return res.status(400).json({ ok: false, error: "triggerType must be COMMENT or DM" });
+    }
+
+    if (resolvedTriggerType === "COMMENT") {
+      if (!keywords?.length) return res.status(400).json({ ok: false, error: "keywords array is required" });
+      if (!responseMessage) return res.status(400).json({ ok: false, error: "responseMessage is required" });
+    } else {
+      if (!flowSteps) return res.status(400).json({ ok: false, error: "flowSteps is required for DM triggers" });
+    }
 
     const validMatchTypes = ["CONTAINS", "EXACT", "STARTS_WITH"];
     const resolvedMatchType = matchType || "CONTAINS";
@@ -47,7 +57,6 @@ async function create(req, res, next) {
       return res.status(400).json({ ok: false, error: `matchType must be one of: ${validMatchTypes.join(", ")}` });
     }
 
-    // Verify the IG account belongs to this user
     const account = await connectedAccountRepo.findByInstagramId(instagramId);
     if (!account || account.userId !== req.userId) {
       return res.status(403).json({ ok: false, error: "Instagram account not found or not authorized" });
@@ -57,9 +66,11 @@ async function create(req, res, next) {
       userId: req.userId,
       instagramId,
       name,
-      keywords,
+      keywords: keywords || [],
       matchType: resolvedMatchType,
-      responseMessage,
+      responseMessage: responseMessage || "",
+      triggerType: resolvedTriggerType,
+      flowSteps: flowSteps || null,
     });
 
     logger.info(req.reqId, `✅ Automation created`, { id: automation.id, name });
@@ -68,7 +79,6 @@ async function create(req, res, next) {
     next(err);
   }
 }
-
 /**
  * PUT /automations/:id
  * Updates an existing automation.

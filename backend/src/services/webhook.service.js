@@ -14,30 +14,23 @@ function parseWebhookBody(body) {
 
   for (const entry of entries) {
     const igAccountId = entry.id;
-    const changes = Array.isArray(entry.changes) ? entry.changes : [];
 
+    // ── EXISTING: Comment events via entry.changes ──
+    const changes = Array.isArray(entry.changes) ? entry.changes : [];
     for (const change of changes) {
       const value = change?.value || {};
       const field = change?.field || "unknown";
 
       const eventId =
-        value.id ||
-        value.comment_id ||
-        value.message_id ||
+        value.id || value.comment_id || value.message_id ||
         `${igAccountId}:${field}:${value.created_time || Date.now()}`;
 
-      const isComment =
-        field === "comments" ||
-        value.item === "comment" ||
-        Boolean(value.comment_id) ||
-        (typeof value.text === "string" && field !== "messages");
-
-      const isMessage = field === "messages" || Boolean(value.message_id);
+      const isComment = field === "comments" || value.item === "comment" ||
+        Boolean(value.comment_id) || (typeof value.text === "string" && field !== "messages");
       const isMention = field === "mentions";
 
       let eventType = "unknown";
       if (isComment) eventType = "comment";
-      else if (isMessage) eventType = "message";
       else if (isMention) eventType = "mention";
 
       const commentText = String(value.text || value.message || value.comment_text || "").trim();
@@ -45,13 +38,27 @@ function parseWebhookBody(body) {
       const mediaId = value.media?.id || value.media_id || value.post_id || entry.id || null;
 
       events.push({
+        instagramId: igAccountId, eventId, eventType,
+        commentText, commenterId, mediaId, rawValue: value,
+      });
+    }
+
+    // ── NEW: DM events via entry.messaging ──
+    const messaging = Array.isArray(entry.messaging) ? entry.messaging : [];
+    for (const message of messaging) {
+      const senderId = message.sender?.id;
+
+      // Loop prevention - skip bot's own outgoing messages
+      if (senderId === igAccountId) continue;
+
+      events.push({
         instagramId: igAccountId,
-        eventId,
-        eventType,
-        commentText,
-        commenterId,
-        mediaId,
-        rawValue: value,
+        eventId: message.message?.mid || `dm:${igAccountId}:${Date.now()}`,
+        eventType: "message",
+        commentText: message.message?.text || "",
+        commenterId: senderId,
+        mediaId: null,
+        rawValue: message,
       });
     }
   }
@@ -87,8 +94,14 @@ async function processWebhook(body, reqId) {
 
     try {
       // ── Step 2: Only process comment events ───────────────────────────
+      if (eventType === "message") {
+        const { handleDM } = require("./messageHandler");
+        await handleDM({ instagramId, eventId, senderId: commenterId, text: commentText, dbEventId: dbEvent.id }, reqId);
+        continue;
+      }
+
       if (eventType !== "comment") {
-        logger.info(reqId, `ℹ️ Non-comment event — skipping automation`, { eventType, eventId });
+        logger.info(reqId, `ℹ️ Non-comment event — skipping`, { eventType, eventId });
         await webhookEventRepo.markProcessed(dbEvent.id);
         continue;
       }

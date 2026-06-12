@@ -1,5 +1,8 @@
 // prisma/schema.prisma
-
+enum TriggerType {
+  COMMENT
+  DM
+}
 generator client {
   provider = "prisma-client-js"
 }
@@ -33,6 +36,8 @@ model Automation {
   keywords        String[]
   matchType       MatchType @default(CONTAINS)
   responseMessage String
+  triggerType     TriggerType @default(COMMENT)   // ← ADD
+  flowSteps       Json?                            // ← ADD
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -42,6 +47,18 @@ model Automation {
   @@index([userId])
   @@index([instagramId])
   @@map("automations")
+}
+model ConversationState {
+  id          String   @id @default(cuid())
+  instagramId String
+  recipientId String
+  state       String
+  flowData    Json?    // stores current position in the flow
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([instagramId, recipientId])
+  @@map("conversation_states")
 }
 
 model WebhookEvent {
