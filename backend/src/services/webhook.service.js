@@ -106,12 +106,34 @@ async function processWebhook(body, reqId) {
       }
 
       // ── Step 3: Look up connected account ─────────────────────────────
-      const connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
-      if (!connectedAccount) {
-        logger.warn(reqId, `⚠️ No connected account found for IG ID ${instagramId}`, { eventId });
-        await webhookEventRepo.markProcessed(dbEvent.id, `No connected account for ${instagramId}`);
-        continue;
-      }
+     // ── Step 3: Look up connected account ─────────────────────────────
+let connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
+
+// Fallback: try webhookInstagramId column
+if (!connectedAccount) {
+  const db = require('../config/db').getDb();
+  const byWebhookId = await db.connectedAccount.findFirst({
+    where: { webhookInstagramId: instagramId, isActive: true }
+  });
+  if (byWebhookId) {
+    const { decrypt } = require('../utils/encryption');
+    connectedAccount = {
+      ...byWebhookId,
+      pageAccessToken: decrypt(byWebhookId.pageAccessToken),
+      userAccessToken: byWebhookId.userAccessToken ? decrypt(byWebhookId.userAccessToken) : null,
+    };
+    logger.info(reqId, `✅ Account found via webhookInstagramId`, {
+      webhookId: instagramId,
+      accountId: byWebhookId.instagramId
+    });
+  }
+}
+
+if (!connectedAccount) {
+  logger.warn(reqId, `⚠️ No connected account found for IG ID ${instagramId}`, { eventId });
+  await webhookEventRepo.markProcessed(dbEvent.id, `No connected account for ${instagramId}`);
+  continue;
+}
 
       if (!connectedAccount.isActive) {
         logger.info(reqId, `ℹ️ Connected account is inactive — skipping`, { instagramId });

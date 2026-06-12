@@ -183,19 +183,21 @@ async function igTokenCallback(req, res, next) {
     const longToken = longRes.data.access_token;
 
     // Step 3: Fetch IG username
-    const igProfile = await axios.get(`https://graph.instagram.com/v25.0/me`, {
-      params: { fields: "id,username", access_token: longToken },
-    });
+ // Step 3: Fetch IG username + webhook-compatible ID
+const igProfile = await axios.get(`https://graph.instagram.com/v25.0/me`, {
+  params: { fields: "id,username,instagram_business_account_id", access_token: longToken },
+});
 
-    const igUsername = igProfile.data.username;
-
+const igUsername = igProfile.data.username;
+const webhookInstagramId = igProfile.data.instagram_business_account_id || null;
     // Step 4: Save to DB
-    const account = await connectedAccountRepo.upsertFromIg({
-      userId,
-      instagramId: igUserId,
-      instagramUsername: igUsername,
-      accessToken: longToken,
-    });
+  const account = await connectedAccountRepo.upsertFromIg({
+  userId,
+  instagramId: igUserId,
+  webhookInstagramId,
+  instagramUsername: igUsername,
+  accessToken: longToken,
+});
 
     logger.info(reqId, `✅ IG OAuth complete`, { igUserId, igUsername });
 

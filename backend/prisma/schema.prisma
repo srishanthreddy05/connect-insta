@@ -18,6 +18,7 @@ pageName  String?
   instagramUsername String?
   pageAccessToken   String
   userAccessToken   String?  // ✅ add this
+    webhookInstagramId String?  
   connectedAt       DateTime @default(now())
   updatedAt         DateTime @updatedAt
   isActive          Boolean  @default(true)

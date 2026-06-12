@@ -106,18 +106,20 @@ async function deactivate(instagramId) {
     data: { isActive: false },
   });
 }
-async function upsertFromIg({ userId, instagramId, instagramUsername, accessToken }) {
+async function upsertFromIg({ userId, instagramId, webhookInstagramId, instagramUsername, accessToken }) {
   const db = getDb();
   return db.connectedAccount.upsert({
     where: { instagramId },
     create: {
       userId,
       instagramId,
+      webhookInstagramId,
       instagramUsername,
       pageAccessToken: encrypt(accessToken),
       userAccessToken: encrypt(accessToken),
     },
     update: {
+      webhookInstagramId,
       instagramUsername,
       pageAccessToken: encrypt(accessToken),
       userAccessToken: encrypt(accessToken),
@@ -126,7 +128,7 @@ async function upsertFromIg({ userId, instagramId, instagramUsername, accessToke
     },
     select: {
       id: true, userId: true, instagramId: true,
-      instagramUsername: true, connectedAt: true,
+      webhookInstagramId: true, instagramUsername: true, connectedAt: true,
     },
   });
 }
