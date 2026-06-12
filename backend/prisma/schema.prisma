@@ -12,8 +12,8 @@ datasource db {
 model ConnectedAccount {
   id                String   @id @default(cuid())
   userId            String
-  pageId            String   @unique
-  pageName          String
+  pageId    String?  @unique
+pageName  String?
   instagramId       String   @unique
   instagramUsername String?
   pageAccessToken   String

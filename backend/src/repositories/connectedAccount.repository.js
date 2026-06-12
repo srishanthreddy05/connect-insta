@@ -106,5 +106,28 @@ async function deactivate(instagramId) {
     data: { isActive: false },
   });
 }
-
-module.exports = { findByInstagramId, findByPageId, findAllByUserId, upsert, deactivate, upsertIgToken };
+async function upsertFromIg({ userId, instagramId, instagramUsername, accessToken }) {
+  const db = getDb();
+  return db.connectedAccount.upsert({
+    where: { instagramId },
+    create: {
+      userId,
+      instagramId,
+      instagramUsername,
+      pageAccessToken: encrypt(accessToken),
+      userAccessToken: encrypt(accessToken),
+    },
+    update: {
+      instagramUsername,
+      pageAccessToken: encrypt(accessToken),
+      userAccessToken: encrypt(accessToken),
+      isActive: true,
+      updatedAt: new Date(),
+    },
+    select: {
+      id: true, userId: true, instagramId: true,
+      instagramUsername: true, connectedAt: true,
+    },
+  });
+}
+module.exports = { findByInstagramId, findByPageId, findAllByUserId, upsert, deactivate, upsertIgToken, upsertFromIg };

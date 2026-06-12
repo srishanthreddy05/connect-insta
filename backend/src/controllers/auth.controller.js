@@ -159,15 +159,15 @@ function igTokenLogin(req, res) {
   logger.info(reqId, `🔐 Redirecting to Instagram Business OAuth`, { userId });
   res.redirect(url);
 }
-
 async function igTokenCallback(req, res, next) {
   const reqId = req.reqId;
   const { code, state: userId } = req.query;
 
   if (!code) return res.status(400).json({ ok: false, error: "Missing code" });
+  if (!userId) return res.status(400).json({ ok: false, error: "Missing userId in state" });
 
   try {
-    // Step 1: Exchange code for short-lived token
+    // Step 1: Short-lived token
     const tokenRes = await axios.post(
       "https://api.instagram.com/oauth/access_token",
       new URLSearchParams({
@@ -181,11 +181,9 @@ async function igTokenCallback(req, res, next) {
     );
 
     const shortToken = tokenRes.data.access_token;
-    const igUserId = tokenRes.data.user_id;
+    const igUserId = String(tokenRes.data.user_id);
 
-    logger.info(reqId, `✅ Short-lived IG token acquired`, { igUserId });
-
-    // Step 2: Exchange for long-lived token (60 days)
+    // Step 2: Long-lived token (60 days)
     const longRes = await axios.get("https://graph.instagram.com/access_token", {
       params: {
         grant_type: "ig_exchange_token",
@@ -195,29 +193,31 @@ async function igTokenCallback(req, res, next) {
     });
 
     const longToken = longRes.data.access_token;
-    const expiresIn = longRes.data.expires_in;
 
-    logger.info(reqId, `✅ Long-lived IG token acquired`, { igUserId, expiresIn });
-
-    // Step 3: Save to DB as userAccessToken
-    await connectedAccountRepo.upsertIgToken({
-  userId,
-  userAccessToken: longToken,
-});
-
-    logger.info(reqId, `✅ IG token saved to DB`, { igUserId });
-
-    res.json({
-      ok: true,
-      message: "Instagram token saved successfully",
-      igUserId,
-      expiresIn,
+    // Step 3: Fetch IG username
+    const igProfile = await axios.get(`https://graph.instagram.com/v25.0/me`, {
+      params: { fields: "id,username", access_token: longToken },
     });
+
+    const igUsername = igProfile.data.username;
+
+    // Step 4: Save to DB
+    const account = await connectedAccountRepo.upsertFromIg({
+      userId,
+      instagramId: igUserId,
+      instagramUsername: igUsername,
+      accessToken: longToken,
+    });
+
+    logger.info(reqId, `✅ IG OAuth complete`, { igUserId, igUsername });
+
+    // Step 5: Redirect to dashboard
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3001";
+    res.redirect(`${frontendUrl}?connected=true`);
 
   } catch (err) {
     logger.error(reqId, `❌ IG token callback failed`, { error: err?.response?.data || err.message });
     next(err);
   }
 }
-
 module.exports = { login, callback, listConnectedAccounts, igTokenLogin, igTokenCallback };
