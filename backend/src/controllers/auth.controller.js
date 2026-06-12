@@ -184,12 +184,23 @@ async function igTokenCallback(req, res, next) {
 
     // Step 3: Fetch IG username
  // Step 3: Fetch IG username + webhook-compatible ID
+// Step 3: Fetch IG username + webhook-compatible ID
 const igProfile = await axios.get(`https://graph.instagram.com/v25.0/me`, {
-  params: { fields: "id,username,instagram_business_account_id", access_token: longToken },
+  params: { fields: "id,username", access_token: longToken },
 });
 
 const igUsername = igProfile.data.username;
-const webhookInstagramId = igProfile.data.instagram_business_account_id || null;
+let webhookInstagramId = null;
+
+// Try to get webhook-compatible ID
+try {
+  const webhookIdRes = await axios.get(`https://graph.instagram.com/v25.0/me`, {
+    params: { fields: "id,instagram_business_account_id", access_token: longToken },
+  });
+  webhookInstagramId = webhookIdRes.data.instagram_business_account_id || null;
+} catch(e) {
+  logger.warn(reqId, `⚠️ instagram_business_account_id not available`, { error: e.message });
+}
     // Step 4: Save to DB
   const account = await connectedAccountRepo.upsertFromIg({
   userId,
