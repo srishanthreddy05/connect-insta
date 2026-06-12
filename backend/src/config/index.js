@@ -19,17 +19,16 @@ const config = {
     nodeEnv: optional("NODE_ENV", "production"),
     isDev: optional("NODE_ENV", "production") === "development",
   },
-meta: {
-  appId: required("APP_ID"),
-  appSecret: required("APP_SECRET"),
-  igAppId: required("IG_APP_ID"),
-  igAppSecret: required("IG_APP_SECRET"),
-  igRedirectUri: required("IG_REDIRECT_URI"),
-  redirectUri: required("REDIRECT_URI"),
-  webhookVerifyToken: required("WEBHOOK_VERIFY_TOKEN"),
-  graphVersion: "v25.0",
-  graphBase: `https://graph.facebook.com/v25.0`,
-},
+  meta: {
+    igAppId: required("IG_APP_ID"),
+    igAppSecret: required("IG_APP_SECRET"),
+    igRedirectUri: required("IG_REDIRECT_URI"),
+    webhookVerifyToken: required("WEBHOOK_VERIFY_TOKEN"),
+    adminApiKey: required("ADMIN_API_KEY"),   // ADD
+    frontendUrl: required("FRONTEND_URL"),
+    graphVersion: "v25.0",
+    graphBase: `https://graph.instagram.com/v25.0`,
+  },
   db: {
     url: required("DATABASE_URL"),
   },
@@ -38,5 +37,11 @@ meta: {
     key: required("ENCRYPTION_KEY"),
   },
 };
+
+// ADD after the config object, before module.exports:
+const encKey = process.env.ENCRYPTION_KEY || "";
+if (encKey.length !== 64 || !/^[0-9a-fA-F]+$/.test(encKey)) {
+  throw new Error("ENCRYPTION_KEY must be a 64-character hex string (32 bytes). Generate with: openssl rand -hex 32");
+}
 
 module.exports = config;

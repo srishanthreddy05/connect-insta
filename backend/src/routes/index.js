@@ -10,8 +10,8 @@ const automationCtrl = require("../controllers/automation.controller");
 const adminCtrl = require("../controllers/admin.controller");
 const { requireAuth } = require("../middleware/auth");
 
-router.get("/auth/ig-token", authCtrl.igTokenLogin);
-router.get("/auth/ig-token/callback", authCtrl.igTokenCallback);
+router.get("/auth/login", authCtrl.igTokenLogin);
+router.get("/auth/callback", authCtrl.igTokenCallback);
 // ── Webhook ────────────────────────────────────────────────────────────────
 // Public — Meta must reach these without auth
 router.get("/webhook", webhookCtrl.verify);
@@ -19,9 +19,6 @@ router.post("/webhook", webhookCtrl.receive);
 
 // ── OAuth ──────────────────────────────────────────────────────────────────
 // /auth/login?userId=abc123 — redirects to Meta, passes userId as state
-router.get("/auth/login", authCtrl.login);
-// Meta redirects back here with code + state=userId
-router.get("/auth/callback", authCtrl.callback);
 
 // ── Connected Accounts ─────────────────────────────────────────────────────
 router.get("/connected-accounts", requireAuth, authCtrl.listConnectedAccounts);

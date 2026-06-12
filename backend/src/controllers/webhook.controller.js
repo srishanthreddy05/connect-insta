@@ -1,6 +1,6 @@
 // src/controllers/webhook.controller.js
 "use strict";
-
+const crypto = require("crypto");
 const config = require("../config");
 const { processWebhook } = require("../services/webhook.service");
 const { logger, normalizeToken, maskToken } = require("../utils/logger");
@@ -47,17 +47,38 @@ function verify(req, res) {
 function receive(req, res) {
   const reqId = req.reqId;
 
+  // ── Signature verification ─────────────────────────────────────────────
+  const signature = req.headers["x-hub-signature-256"];
+  if (!signature) {
+    logger.warn(reqId, `❌ Missing X-Hub-Signature-256 header`);
+    return res.sendStatus(401);
+  }
+  const rawBody = req.body; // Raw Buffer from express.raw()
+  if (!rawBody || !Buffer.isBuffer(rawBody)) {
+  logger.warn(reqId, `❌ Missing or invalid webhook body`);
+  return res.sendStatus(400);
+}
+  const expected = "sha256=" + crypto
+    .createHmac("sha256", config.meta.igAppSecret)
+    .update(rawBody)
+    .digest("hex");
+
+  if (signature !== expected) {
+    logger.warn(reqId, `❌ Webhook signature mismatch — possible spoofed request`);
+    return res.sendStatus(403);
+  }
+
+  const parsedBody = JSON.parse(rawBody);
+
   console.log(`\n${"─".repeat(60)}`);
   console.log(`[${new Date().toISOString()}][${reqId}] 🔥 INCOMING WEBHOOK`);
-  console.log(JSON.stringify(req.body, null, 2));
+  console.log(JSON.stringify(parsedBody, null, 2));
   console.log("─".repeat(60));
 
-  // Respond before doing any work
   res.status(200).send("EVENT_RECEIVED");
 
-  // Process asynchronously — never block the HTTP response
   setImmediate(() => {
-    processWebhook(req.body, reqId).catch((err) => {
+    processWebhook(parsedBody, reqId).catch((err) => {
       logger.error(reqId, `❌ Unhandled webhook processing error`, { error: err.message });
     });
   });

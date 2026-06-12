@@ -1,443 +1,747 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>InstaAutomate — Dashboard</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InstaAutomate — Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-  :root {
-    --bg: #0e0e10;
-    --surface: #18181b;
-    --surface2: #222226;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f4f4f5;
-    --muted: #8b8b96;
-    --accent: #a78bfa;
-    --accent-dim: rgba(167,139,250,0.12);
-    --accent-border: rgba(167,139,250,0.35);
-    --green: #34d399;
-    --green-dim: rgba(52,211,153,0.1);
-    --red: #f87171;
-    --red-dim: rgba(248,113,113,0.1);
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
+    :root {
+      --bg: #0e0e10;
+      --surface: #18181b;
+      --surface2: #222226;
+      --border: rgba(255, 255, 255, 0.08);
+      --border2: rgba(255, 255, 255, 0.14);
+      --text: #f4f4f5;
+      --muted: #8b8b96;
+      --accent: #a78bfa;
+      --accent-dim: rgba(167, 139, 250, 0.12);
+      --accent-border: rgba(167, 139, 250, 0.35);
+      --green: #34d399;
+      --green-dim: rgba(52, 211, 153, 0.1);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    min-height: 100vh;
-  }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
 
-  .shell { display: flex; min-height: 100vh; }
+    .shell {
+      display: flex;
+      min-height: 100vh;
+    }
 
-  .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 24px 0;
-    position: fixed;
-    top: 0; left: 0; bottom: 0;
-    display: flex;
-    flex-direction: column;
-  }
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+    }
 
-  .logo {
-    padding: 0 20px 24px;
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 12px;
-  }
-  .logo span { color: var(--accent); }
+    .logo {
+      padding: 0 20px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
 
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
-    color: var(--muted);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.15s;
-    border-left: 2px solid transparent;
-  }
-  .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
-  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-dim); }
-  .nav-icon { font-size: 18px; }
+    .logo span {
+      color: var(--accent);
+    }
 
-  .main { margin-left: 220px; padding: 32px; flex: 1; max-width: 900px; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
 
-  #auth-gate {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    gap: 16px;
-    text-align: center;
-    padding: 32px;
-  }
-  #auth-gate h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; }
-  #auth-gate p { color: var(--muted); max-width: 360px; }
+    .nav-item:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
 
-  .section { display: none; }
-  .section.active { display: block; }
+    .nav-item.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
 
-  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; letter-spacing: -0.3px; }
+    .nav-icon {
+      font-size: 18px;
+    }
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    margin-bottom: 16px;
-  }
+    .main {
+      margin-left: 220px;
+      padding: 32px;
+      flex: 1;
+      max-width: 900px;
+    }
 
-  .account-card { display: flex; align-items: center; gap: 16px; }
-  .avatar {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 600; font-size: 16px; color: var(--accent);
-    flex-shrink: 0;
-  }
-  .account-info { flex: 1; }
-  .account-name { font-weight: 500; font-size: 15px; }
-  .account-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .badge {
-    font-size: 11px; font-weight: 500;
-    padding: 3px 10px; border-radius: 20px;
-    background: var(--green-dim); color: var(--green);
-    border: 1px solid rgba(52,211,153,0.25);
-  }
-  .badge.inactive { background: var(--red-dim); color: var(--red); border-color: rgba(248,113,113,0.25); }
+    #auth-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 16px;
+      text-align: center;
+      padding: 32px;
+    }
 
-  .automation-card { position: relative; }
-  .automation-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .automation-name { font-weight: 500; font-size: 15px; }
-  .automation-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
-  .keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .keyword-tag {
-    font-size: 12px; padding: 3px 10px; border-radius: 20px;
-    background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border);
-  }
-  .response-preview {
-    margin-top: 12px; padding: 10px 14px;
-    background: var(--surface2); border-radius: var(--radius-sm);
-    font-size: 13px; color: var(--muted); border-left: 2px solid var(--accent-border);
-  }
-  .card-actions { display: flex; gap: 8px; }
+    #auth-gate h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
 
-  .btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 9px 18px; border-radius: var(--radius-sm);
-    font-size: 14px; font-weight: 500; cursor: pointer;
-    border: 1px solid var(--border2); background: transparent;
-    color: var(--text); transition: all 0.15s;
-  }
-  .btn:hover { background: rgba(255,255,255,0.06); }
-  .btn:active { transform: scale(0.98); }
-  .btn-primary { background: var(--accent); color: #1a0a40; border-color: var(--accent); }
-  .btn-primary:hover { background: #c4b5fd; }
-  .btn-sm { padding: 6px 12px; font-size: 13px; }
-  .btn-danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
-  .btn-danger:hover { background: var(--red-dim); }
+    #auth-gate p {
+      color: var(--muted);
+      max-width: 360px;
+    }
 
-  .form-group { margin-bottom: 18px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
-  input[type=text], textarea, select {
-    width: 100%; background: var(--surface2);
-    border: 1px solid var(--border2); border-radius: var(--radius-sm);
-    padding: 10px 14px; color: var(--text); font-size: 14px;
-    font-family: inherit; transition: border-color 0.15s; outline: none;
-  }
-  input[type=text]:focus, textarea:focus, select:focus { border-color: var(--accent); }
-  select option { background: var(--surface2); }
-  textarea { min-height: 90px; resize: vertical; }
-  .tag-input-wrap {
-    display: flex; gap: 8px; flex-wrap: wrap; padding: 8px;
-    background: var(--surface2); border: 1px solid var(--border2);
-    border-radius: var(--radius-sm); min-height: 44px; cursor: text;
-  }
-  .tag-input-wrap input {
-    border: none; background: transparent; padding: 2px 4px;
-    flex: 1; min-width: 100px; font-size: 14px; color: var(--text);
-  }
-  .tag-input-wrap:focus-within { border-color: var(--accent); }
+    .section {
+      display: none;
+    }
 
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7); z-index: 100;
-    align-items: center; justify-content: center; padding: 20px;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius); padding: 28px;
-    width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto;
-  }
-  .modal-title { font-size: 17px; font-weight: 600; margin-bottom: 20px; }
+    .section.active {
+      display: block;
+    }
 
-  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
-  .empty p { margin-top: 6px; font-size: 14px; }
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: -0.3px;
+    }
 
-  #toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface); border: 1px solid var(--border2);
-    border-radius: var(--radius-sm); padding: 12px 18px;
-    font-size: 14px; z-index: 999; opacity: 0;
-    transform: translateY(8px); transition: all 0.2s; pointer-events: none;
-  }
-  #toast.show { opacity: 1; transform: translateY(0); }
-  #toast.success { border-color: rgba(52,211,153,0.4); color: var(--green); }
-  #toast.error { border-color: rgba(248,113,113,0.4); color: var(--red); }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
 
-  .login-box {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 36px 32px; width: 100%; max-width: 420px;
-  }
-  .login-box h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  .login-box p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+    .account-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
 
-  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 16px 20px;
-  }
-  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .stat-value { font-size: 24px; font-weight: 600; }
-  .stat-value.accent { color: var(--accent); }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
 
-  .spinner {
-    display: inline-block; width: 16px; height: 16px;
-    border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--accent);
-    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-</style>
+    .account-info {
+      flex: 1;
+    }
+
+    .account-name {
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    .account-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--green-dim);
+      color: var(--green);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+    }
+
+    .badge.inactive {
+      background: var(--red-dim);
+      color: var(--red);
+      border-color: rgba(248, 113, 113, 0.25);
+    }
+
+    .automation-card {
+      position: relative;
+    }
+
+    .automation-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .automation-name {
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    .automation-meta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .keyword-tag {
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-border);
+    }
+
+    .response-preview {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--muted);
+      border-left: 2px solid var(--accent-border);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: transparent;
+      color: var(--text);
+      transition: all 0.15s;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #1a0a40;
+      border-color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      background: #c4b5fd;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .btn-danger {
+      border-color: rgba(248, 113, 113, 0.3);
+      color: var(--red);
+    }
+
+    .btn-danger:hover {
+      background: var(--red-dim);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input[type=text],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    input[type=text]:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    select option {
+      background: var(--surface2);
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .tag-input-wrap {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      min-height: 44px;
+      cursor: text;
+    }
+
+    .tag-input-wrap input {
+      border: none;
+      background: transparent;
+      padding: 2px 4px;
+      flex: 1;
+      min-width: 100px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .tag-input-wrap:focus-within {
+      border-color: var(--accent);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty p {
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      padding: 12px 18px;
+      font-size: 14px;
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.2s;
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #toast.success {
+      border-color: rgba(52, 211, 153, 0.4);
+      color: var(--green);
+    }
+
+    #toast.error {
+      border-color: rgba(248, 113, 113, 0.4);
+      color: var(--red);
+    }
+
+    .login-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-box h2 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .login-box p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .stat-value.accent {
+      color: var(--accent);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- Auth Gate -->
-<div id="auth-gate">
-  <div class="login-box">
-    <h2>InstaAutomate</h2>
-    <p>Automate DMs when people comment on your Instagram posts.</p>
-    <div class="form-group">
-      <label>Your User ID</label>
-      <input type="text" id="login-userid" placeholder="e.g. user_123" />
-    </div>
-    <div class="form-group">
-      <label>API Key</label>
-      <input type="text" id="login-apikey" placeholder="Your ADMIN_API_KEY" />
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Sign in</button>
-    <div class="divider"></div>
-    <p style="font-size:13px;color:var(--muted);text-align:center;">New user? Connect your Instagram account after signing in.</p>
-  </div>
-</div>
-
-<!-- Main App -->
-<div class="shell" id="app" style="display:none;">
-  <nav class="sidebar">
-    <div class="logo">Insta<span>Automate</span></div>
-    <div class="nav-item active" onclick="showSection('dashboard', event)">
-      <span class="nav-icon">⚡</span> Dashboard
-    </div>
-    <div class="nav-item" onclick="showSection('accounts', event)">
-      <span class="nav-icon">📱</span> Accounts
-    </div>
-    <div class="nav-item" onclick="showSection('automations', event)">
-      <span class="nav-icon">🤖</span> Automations
-    </div>
-    <div style="margin-top:auto; padding: 0 20px;">
-      <button class="btn btn-sm" style="width:100%;justify-content:center;" onclick="logout()">Sign out</button>
-    </div>
-  </nav>
-
-  <main class="main">
-
-    <!-- Dashboard -->
-    <div id="section-dashboard" class="section active">
-      <div class="page-title">Dashboard</div>
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">Connected accounts</div>
-          <div class="stat-value accent" id="stat-accounts">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Active automations</div>
-          <div class="stat-value accent" id="stat-automations">—</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Signed in as</div>
-          <div class="stat-value" style="font-size:14px;margin-top:4px;" id="stat-userid">—</div>
-        </div>
+  <!-- Auth Gate -->
+  <div id="auth-gate">
+    <div class="login-box">
+      <h2>InstaAutomate</h2>
+      <p>Automate DMs when people comment on your Instagram posts.</p>
+      <div class="form-group">
+        <label>Your User ID</label>
+        <input type="text" id="login-userid" placeholder="e.g. user_123" />
       </div>
-      <div class="card">
-        <div style="font-weight:500;margin-bottom:8px;">Quick start</div>
-        <ol style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2;">
-          <li>Connect your Instagram Business account under <b style="color:var(--text);">Accounts</b></li>
-          <li>Create an automation under <b style="color:var(--text);">Automations</b> — set keywords and a DM response</li>
-          <li>When someone comments with those keywords, the DM fires automatically</li>
-        </ol>
+      <div class="form-group">
+        <label>API Key</label>
+        <input type="text" id="login-apikey" placeholder="Your ADMIN_API_KEY" />
       </div>
-    </div>
-
-    <!-- Accounts -->
-    <div id="section-accounts" class="section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <div class="page-title" style="margin:0;">Connected accounts</div>
-        <button class="btn btn-primary" onclick="connectInstagram()">+ Connect Instagram</button>
-      </div>
-      <div id="accounts-list"><div style="color:var(--muted);font-size:14px;">Loading... <span class="spinner"></span></div></div>
-    </div>
-
-    <!-- Automations -->
-    <div id="section-automations" class="section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <div class="page-title" style="margin:0;">Automations</div>
-        <button class="btn btn-primary" onclick="openCreateModal()">+ New automation</button>
-      </div>
-      <div id="automations-list"><div style="color:var(--muted);font-size:14px;">Loading... <span class="spinner"></span></div></div>
-    </div>
-
-  </main>
-</div>
-
-<!-- Create Automation Modal -->
-<div class="modal-overlay" id="create-modal">
-  <div class="modal">
-    <div class="modal-title">New automation</div>
-    <div class="form-group">
-      <label>Name</label>
-      <input type="text" id="f-name" placeholder="e.g. Product inquiry reply" />
-    </div>
-    <div class="form-group">
-      <label>Instagram account</label>
-      <select id="f-account"></select>
-    </div>
-    <div class="form-group">
-      <label>Keywords <span style="color:var(--muted);font-weight:400;">(press Enter to add)</span></label>
-      <div class="tag-input-wrap" id="keyword-wrap" onclick="document.getElementById('kw-input').focus()">
-        <input type="text" id="kw-input" placeholder="Type a keyword and press Enter" onkeydown="handleKeyword(event)" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Match type</label>
-      <select id="f-match">
-        <option value="CONTAINS">Contains (comment includes keyword)</option>
-        <option value="EXACT">Exact match</option>
-        <option value="STARTS_WITH">Starts with keyword</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>DM response message</label>
-      <textarea id="f-response" placeholder="Hey! Thanks for your interest. Here's the info you asked for..."></textarea>
-    </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
-      <button class="btn" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="createAutomation()">Create automation</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()">Sign in</button>
+      <div class="divider"></div>
+      <p style="font-size:13px;color:var(--muted);text-align:center;">New user? Connect your Instagram account after
+        signing in.</p>
     </div>
   </div>
-</div>
 
-<div id="toast"></div>
+  <!-- Main App -->
+  <div class="shell" id="app" style="display:none;">
+    <nav class="sidebar">
+      <div class="logo">Insta<span>Automate</span></div>
+      <div class="nav-item active" onclick="showSection('dashboard', event)">
+        <span class="nav-icon">⚡</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('accounts', event)">
+        <span class="nav-icon">📱</span> Accounts
+      </div>
+      <div class="nav-item" onclick="showSection('automations', event)">
+        <span class="nav-icon">🤖</span> Automations
+      </div>
+      <div style="margin-top:auto; padding: 0 20px;">
+        <button class="btn btn-sm" style="width:100%;justify-content:center;" onclick="logout()">Sign out</button>
+      </div>
+    </nav>
 
-<script>
-const BASE = 'https://connect-insta.onrender.com';
-let STATE = { userId: '', apiKey: '', accounts: [], automations: [] };
-const keywords = [];
+    <main class="main">
 
-function headers() {
-  return { 'Content-Type': 'application/json', 'X-Api-Key': STATE.apiKey, 'X-User-Id': STATE.userId };
-}
+      <!-- Dashboard -->
+      <div id="section-dashboard" class="section active">
+        <div class="page-title">Dashboard</div>
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">Connected accounts</div>
+            <div class="stat-value accent" id="stat-accounts">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active automations</div>
+            <div class="stat-value accent" id="stat-automations">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Signed in as</div>
+            <div class="stat-value" style="font-size:14px;margin-top:4px;" id="stat-userid">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:500;margin-bottom:8px;">Quick start</div>
+          <ol style="padding-left:20px;color:var(--muted);font-size:14px;line-height:2;">
+            <li>Connect your Instagram Business account under <b style="color:var(--text);">Accounts</b></li>
+            <li>Create an automation under <b style="color:var(--text);">Automations</b> — set keywords and a DM
+              response</li>
+            <li>When someone comments with those keywords, the DM fires automatically</li>
+          </ol>
+        </div>
+      </div>
 
-async function doLogin() {
-  const uid = document.getElementById('login-userid').value.trim();
-  const key = document.getElementById('login-apikey').value.trim();
-  if (!uid || !key) { toast('Enter both User ID and API Key', 'error'); return; }
-  STATE.userId = uid; STATE.apiKey = key;
-  // Save to localStorage so we can restore after OAuth redirect
-  localStorage.setItem('rf_userId', uid);
-  localStorage.setItem('rf_apiKey', key);
-  try {
-    const r = await fetch(`${BASE}/connected-accounts`, { headers: headers() });
-    if (r.status === 401) { toast('Invalid API key', 'error'); return; }
-    document.getElementById('auth-gate').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
-    document.getElementById('stat-userid').textContent = uid;
-    loadAll();
-  } catch(e) { toast('Cannot reach server', 'error'); }
-}
+      <!-- Accounts -->
+      <div id="section-accounts" class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div class="page-title" style="margin:0;">Connected accounts</div>
+          <button class="btn btn-primary" onclick="connectInstagram()">+ Connect Instagram</button>
+        </div>
+        <div id="accounts-list">
+          <div style="color:var(--muted);font-size:14px;">Loading... <span class="spinner"></span></div>
+        </div>
+      </div>
 
-function logout() {
-  STATE = { userId:'', apiKey:'', accounts:[], automations:[] };
-  localStorage.removeItem('rf_userId');
-  localStorage.removeItem('rf_apiKey');
-  document.getElementById('auth-gate').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-}
+      <!-- Automations -->
+      <div id="section-automations" class="section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div class="page-title" style="margin:0;">Automations</div>
+          <button class="btn btn-primary" onclick="openCreateModal()">+ New automation</button>
+        </div>
+        <div id="automations-list">
+          <div style="color:var(--muted);font-size:14px;">Loading... <span class="spinner"></span></div>
+        </div>
+      </div>
 
-async function loadAll() {
-  await Promise.all([loadAccounts(), loadAutomations()]);
-}
+    </main>
+  </div>
 
-async function loadAccounts() {
-  const r = await fetch(`${BASE}/connected-accounts`, { headers: headers() });
-  const data = await r.json();
-  STATE.accounts = data.data || [];
-  document.getElementById('stat-accounts').textContent = STATE.accounts.length;
-  renderAccounts();
-  populateAccountSelect();
-}
+  <!-- Create Automation Modal -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal">
+      <div class="modal-title">New automation</div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="f-name" placeholder="e.g. Product inquiry reply" />
+      </div>
+      <div class="form-group">
+        <label>Instagram account</label>
+        <select id="f-account"></select>
+      </div>
+      <div class="form-group">
+        <label>Keywords <span style="color:var(--muted);font-weight:400;">(press Enter to add)</span></label>
+        <div class="tag-input-wrap" id="keyword-wrap" onclick="document.getElementById('kw-input').focus()">
+          <input type="text" id="kw-input" placeholder="Type a keyword and press Enter"
+            onkeydown="handleKeyword(event)" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Match type</label>
+        <select id="f-match">
+          <option value="CONTAINS">Contains (comment includes keyword)</option>
+          <option value="EXACT">Exact match</option>
+          <option value="STARTS_WITH">Starts with keyword</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>DM response message</label>
+        <textarea id="f-response"
+          placeholder="Hey! Thanks for your interest. Here's the info you asked for..."></textarea>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createAutomation()">Create automation</button>
+      </div>
+    </div>
+  </div>
 
-async function loadAutomations() {
-  const r = await fetch(`${BASE}/automations`, { headers: headers() });
-  const data = await r.json();
-  STATE.automations = data.data || [];
-  document.getElementById('stat-automations').textContent = STATE.automations.filter(a => a.isActive).length;
-  renderAutomations();
-}
+  <div id="toast"></div>
 
-function renderAccounts() {
-  const el = document.getElementById('accounts-list');
-  if (!STATE.accounts.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📱</div><b>No accounts connected</b><p>Click "Connect Instagram" to link your Instagram Business account.</p></div>`;
-    return;
-  }
-  el.innerHTML = STATE.accounts.map(a => `
+  <script>
+    const BASE = window.location.origin;
+    let STATE = { userId: '', apiKey: '', accounts: [], automations: [] };
+    const keywords = [];
+
+    function headers() {
+      return { 'Content-Type': 'application/json', 'X-Api-Key': STATE.apiKey, 'X-User-Id': STATE.userId };
+    }
+
+    async function doLogin() {
+      const uid = document.getElementById('login-userid').value.trim();
+      const key = document.getElementById('login-apikey').value.trim();
+      if (!uid || !key) { toast('Enter both User ID and API Key', 'error'); return; }
+      STATE.userId = uid; STATE.apiKey = key;
+      // Save to localStorage so we can restore after OAuth redirect
+      localStorage.setItem('rf_userId', uid);
+      localStorage.setItem('rf_apiKey', key);
+      try {
+        const r = await fetch(`${BASE}/connected-accounts`, { headers: headers() });
+        if (r.status === 401) { toast('Invalid API key', 'error'); return; }
+        document.getElementById('auth-gate').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('stat-userid').textContent = uid;
+        loadAll();
+      } catch (e) { toast('Cannot reach server', 'error'); }
+    }
+
+    function logout() {
+      STATE = { userId: '', apiKey: '', accounts: [], automations: [] };
+      localStorage.removeItem('rf_userId');
+      localStorage.removeItem('rf_apiKey');
+      document.getElementById('auth-gate').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+
+    async function loadAll() {
+      await Promise.all([loadAccounts(), loadAutomations()]);
+    }
+
+    async function loadAccounts() {
+      const r = await fetch(`${BASE}/connected-accounts`, { headers: headers() });
+      const data = await r.json();
+      STATE.accounts = data.data || [];
+      document.getElementById('stat-accounts').textContent = STATE.accounts.length;
+      renderAccounts();
+      populateAccountSelect();
+    }
+
+    async function loadAutomations() {
+      const r = await fetch(`${BASE}/automations`, { headers: headers() });
+      const data = await r.json();
+      STATE.automations = data.data || [];
+      document.getElementById('stat-automations').textContent = STATE.automations.filter(a => a.isActive).length;
+      renderAutomations();
+    }
+
+    function renderAccounts() {
+      const el = document.getElementById('accounts-list');
+      if (!STATE.accounts.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">📱</div><b>No accounts connected</b><p>Click "Connect Instagram" to link your Instagram Business account.</p></div>`;
+        return;
+      }
+      el.innerHTML = STATE.accounts.map(a => `
     <div class="card account-card">
-      <div class="avatar">${(a.instagramUsername || a.pageName || '?')[0].toUpperCase()}</div>
+      <div class="avatar">${(a.instagramUsername || '?')[0].toUpperCase()}</div>
       <div class="account-info">
         <div class="account-name">@${a.instagramUsername || 'unknown'}</div>
-        <div class="account-sub">${a.pageName || 'Instagram Business'} · ID: ${a.instagramId}</div>
+       <div class="account-sub">Instagram Business · ID: ${a.instagramId}</div>
       </div>
       <span class="badge ${a.isActive ? '' : 'inactive'}">${a.isActive ? 'Active' : 'Inactive'}</span>
     </div>
   `).join('');
-}
+    }
 
-function renderAutomations() {
-  const el = document.getElementById('automations-list');
-  if (!STATE.automations.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">🤖</div><b>No automations yet</b><p>Create your first automation to start sending auto DMs.</p></div>`;
-    return;
-  }
-  el.innerHTML = STATE.automations.map(a => `
+    function renderAutomations() {
+      const el = document.getElementById('automations-list');
+      if (!STATE.automations.length) {
+        el.innerHTML = `<div class="empty"><div class="empty-icon">🤖</div><b>No automations yet</b><p>Create your first automation to start sending auto DMs.</p></div>`;
+        return;
+      }
+      el.innerHTML = STATE.automations.map(a => `
     <div class="card automation-card">
       <div class="automation-header">
         <div>
@@ -449,120 +753,121 @@ function renderAutomations() {
           <button class="btn btn-sm btn-danger" onclick="deleteAutomation('${a.id}')">Delete</button>
         </div>
       </div>
-      <div class="keywords">${(a.keywords||[]).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
+      <div class="keywords">${(a.keywords || []).map(k => `<span class="keyword-tag">${k}</span>`).join('')}</div>
       <div class="response-preview">💬 "${a.responseMessage}"</div>
     </div>
   `).join('');
-}
+    }
 
-function populateAccountSelect() {
-  const sel = document.getElementById('f-account');
-  sel.innerHTML = STATE.accounts.length
-    ? STATE.accounts.map(a => `<option value="${a.instagramId}">@${a.instagramUsername || a.instagramId}</option>`).join('')
-    : '<option value="">No accounts connected yet</option>';
-}
+    function populateAccountSelect() {
+      const sel = document.getElementById('f-account');
+      sel.innerHTML = STATE.accounts.length
+        ? STATE.accounts.map(a => `<option value="${a.instagramId}">@${a.instagramUsername || a.instagramId}</option>`).join('')
+        : '<option value="">No accounts connected yet</option>';
+    }
 
-function connectInstagram() {
-  window.location.href = `${BASE}/auth/ig-token?userId=${encodeURIComponent(STATE.userId)}`;
-}
+    function connectInstagram() {
+      window.location.href = `${BASE}/auth/login?userId=${encodeURIComponent(STATE.userId)}`;
+    }
 
-function showSection(name, e) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('section-' + name).classList.add('active');
-  if (e && e.currentTarget) e.currentTarget.classList.add('active');
-  if (name === 'accounts') loadAccounts();
-  if (name === 'automations') { loadAutomations(); loadAccounts(); }
-}
+    function showSection(name, e) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('section-' + name).classList.add('active');
+      if (e && e.currentTarget) e.currentTarget.classList.add('active');
+      if (name === 'accounts') loadAccounts();
+      if (name === 'automations') { loadAutomations(); loadAccounts(); }
+    }
 
-function openCreateModal() {
-  keywords.length = 0;
-  document.getElementById('keyword-wrap').querySelectorAll('.keyword-tag').forEach(t => t.remove());
-  document.getElementById('f-name').value = '';
-  document.getElementById('f-response').value = '';
-  populateAccountSelect();
-  document.getElementById('create-modal').classList.add('open');
-}
+    function openCreateModal() {
+      keywords.length = 0;
+      document.getElementById('keyword-wrap').querySelectorAll('.keyword-tag').forEach(t => t.remove());
+      document.getElementById('f-name').value = '';
+      document.getElementById('f-response').value = '';
+      populateAccountSelect();
+      document.getElementById('create-modal').classList.add('open');
+    }
 
-function closeModal() {
-  document.getElementById('create-modal').classList.remove('open');
-}
+    function closeModal() {
+      document.getElementById('create-modal').classList.remove('open');
+    }
 
-function handleKeyword(e) {
-  if (e.key === 'Enter' || e.key === ',') {
-    e.preventDefault();
-    const val = e.target.value.trim().toLowerCase();
-    if (!val || keywords.includes(val)) { e.target.value = ''; return; }
-    keywords.push(val);
-    const tag = document.createElement('span');
-    tag.className = 'keyword-tag';
-    tag.style.cursor = 'pointer';
-    tag.textContent = val;
-    tag.title = 'Click to remove';
-    tag.onclick = () => { keywords.splice(keywords.indexOf(val), 1); tag.remove(); };
-    document.getElementById('keyword-wrap').insertBefore(tag, document.getElementById('kw-input'));
-    e.target.value = '';
-  }
-}
+    function handleKeyword(e) {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().toLowerCase();
+        if (!val || keywords.includes(val)) { e.target.value = ''; return; }
+        keywords.push(val);
+        const tag = document.createElement('span');
+        tag.className = 'keyword-tag';
+        tag.style.cursor = 'pointer';
+        tag.textContent = val;
+        tag.title = 'Click to remove';
+        tag.onclick = () => { keywords.splice(keywords.indexOf(val), 1); tag.remove(); };
+        document.getElementById('keyword-wrap').insertBefore(tag, document.getElementById('kw-input'));
+        e.target.value = '';
+      }
+    }
 
-async function createAutomation() {
-  const name = document.getElementById('f-name').value.trim();
-  const instagramId = document.getElementById('f-account').value;
-  const matchType = document.getElementById('f-match').value;
-  const responseMessage = document.getElementById('f-response').value.trim();
-  if (!name || !instagramId || !keywords.length || !responseMessage) {
-    toast('Fill in all fields and add at least one keyword', 'error'); return;
-  }
-  try {
-    const r = await fetch(`${BASE}/automations`, {
-      method: 'POST',
-      headers: headers(),
-      body: JSON.stringify({ name, instagramId, keywords, matchType, responseMessage })
-    });
-    const data = await r.json();
-    if (!data.ok) { toast(data.error || 'Failed to create', 'error'); return; }
-    toast('Automation created!', 'success');
-    closeModal();
-    loadAutomations();
-  } catch(e) { toast('Network error', 'error'); }
-}
+    async function createAutomation() {
+      const name = document.getElementById('f-name').value.trim();
+      const instagramId = document.getElementById('f-account').value;
+      const matchType = document.getElementById('f-match').value;
+      const responseMessage = document.getElementById('f-response').value.trim();
+      if (!name || !instagramId || !keywords.length || !responseMessage) {
+        toast('Fill in all fields and add at least one keyword', 'error'); return;
+      }
+      try {
+        const r = await fetch(`${BASE}/automations`, {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ name, instagramId, keywords, matchType, responseMessage })
+        });
+        const data = await r.json();
+        if (!data.ok) { toast(data.error || 'Failed to create', 'error'); return; }
+        toast('Automation created!', 'success');
+        closeModal();
+        loadAutomations();
+      } catch (e) { toast('Network error', 'error'); }
+    }
 
-async function deleteAutomation(id) {
-  if (!confirm('Delete this automation?')) return;
-  try {
-    const r = await fetch(`${BASE}/automations/${id}`, { method: 'DELETE', headers: headers() });
-    const data = await r.json();
-    if (!data.ok) { toast('Failed to delete', 'error'); return; }
-    toast('Deleted', 'success');
-    loadAutomations();
-  } catch(e) { toast('Network error', 'error'); }
-}
+    async function deleteAutomation(id) {
+      if (!confirm('Delete this automation?')) return;
+      try {
+        const r = await fetch(`${BASE}/automations/${id}`, { method: 'DELETE', headers: headers() });
+        const data = await r.json();
+        if (!data.ok) { toast('Failed to delete', 'error'); return; }
+        toast('Deleted', 'success');
+        loadAutomations();
+      } catch (e) { toast('Network error', 'error'); }
+    }
 
-function toast(msg, type = '') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'show ' + type;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.className = '', 3000);
-}
+    function toast(msg, type = '') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'show ' + type;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3000);
+    }
 
-document.getElementById('login-apikey').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-document.getElementById('create-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('login-apikey').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    document.getElementById('create-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
-// Auto-restore session after Instagram OAuth redirect
-if (window.location.search.includes('connected=true')) {
-  const savedUid = localStorage.getItem('rf_userId');
-  const savedKey = localStorage.getItem('rf_apiKey');
-  if (savedUid && savedKey) {
-    document.getElementById('login-userid').value = savedUid;
-    document.getElementById('login-apikey').value = savedKey;
-    doLogin().then(() => {
-      showSection('accounts', null);
-      toast('Instagram connected!', 'success');
-    });
-  }
-  window.history.replaceState({}, '', window.location.pathname);
-}
-</script>
+    // Auto-restore session after Instagram OAuth redirect
+    if (window.location.search.includes('connected=true')) {
+      const savedUid = localStorage.getItem('rf_userId');
+      const savedKey = localStorage.getItem('rf_apiKey');
+      if (savedUid && savedKey) {
+        document.getElementById('login-userid').value = savedUid;
+        document.getElementById('login-apikey').value = savedKey;
+        doLogin().then(() => {
+          showSection('accounts', null);
+          toast('Instagram connected!', 'success');
+        });
+      }
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  </script>
 </body>
+
 </html>

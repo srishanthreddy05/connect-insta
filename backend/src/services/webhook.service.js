@@ -106,34 +106,17 @@ async function processWebhook(body, reqId) {
       }
 
       // ── Step 3: Look up connected account ─────────────────────────────
-     // ── Step 3: Look up connected account ─────────────────────────────
-let connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
+      // ── Step 3: Look up connected account ─────────────────────────────
+      let connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
 
-// Fallback: try webhookInstagramId column
-if (!connectedAccount) {
-  const db = require('../config/db').getDb();
-  const byWebhookId = await db.connectedAccount.findFirst({
-    where: { webhookInstagramId: instagramId, isActive: true }
-  });
-  if (byWebhookId) {
-    const { decrypt } = require('../utils/encryption');
-    connectedAccount = {
-      ...byWebhookId,
-      pageAccessToken: decrypt(byWebhookId.pageAccessToken),
-      userAccessToken: byWebhookId.userAccessToken ? decrypt(byWebhookId.userAccessToken) : null,
-    };
-    logger.info(reqId, `✅ Account found via webhookInstagramId`, {
-      webhookId: instagramId,
-      accountId: byWebhookId.instagramId
-    });
-  }
-}
+      // Fallback: try webhookInstagramId column
 
-if (!connectedAccount) {
-  logger.warn(reqId, `⚠️ No connected account found for IG ID ${instagramId}`, { eventId });
-  await webhookEventRepo.markProcessed(dbEvent.id, `No connected account for ${instagramId}`);
-  continue;
-}
+
+      if (!connectedAccount) {
+        logger.warn(reqId, `⚠️ No connected account found for IG ID ${instagramId}`, { eventId });
+        await webhookEventRepo.markProcessed(dbEvent.id, `No connected account for ${instagramId}`);
+        continue;
+      }
 
       if (!connectedAccount.isActive) {
         logger.info(reqId, `ℹ️ Connected account is inactive — skipping`, { instagramId });
@@ -159,12 +142,11 @@ if (!connectedAccount) {
       });
 
       // ── Step 5: Send DM ───────────────────────────────────────────────
-     const tokenToUse = connectedAccount.userAccessToken || connectedAccount.pageAccessToken;
       let dmResult;
       try {
         dmResult = await metaService.sendDM({
           instagramId,
-          pageAccessToken: tokenToUse,
+          accessToken: connectedAccount.accessToken,
           recipientIgUserId: commenterId,
           messageText: automation.responseMessage,
           reqId,
@@ -179,7 +161,7 @@ if (!connectedAccount) {
             commenterId,
             eventId,
           });
-          await webhookEventRepo.markProcessed(dbEvent.id, "24hr window closed").catch(() => {});
+          await webhookEventRepo.markProcessed(dbEvent.id, "24hr window closed").catch(() => { });
           continue;
         }
 
@@ -189,7 +171,7 @@ if (!connectedAccount) {
           instagramId,
           error: dmError?.response?.data || dmError.message,
         });
-        await webhookEventRepo.markProcessed(dbEvent.id, dmError.message).catch(() => {});
+        await webhookEventRepo.markProcessed(dbEvent.id, dmError.message).catch(() => { });
         continue;
       }
 
@@ -217,7 +199,7 @@ if (!connectedAccount) {
         instagramId,
         error: err?.response?.data || err.message,
       });
-      await webhookEventRepo.markProcessed(dbEvent.id, err.message).catch(() => {});
+      await webhookEventRepo.markProcessed(dbEvent.id, err.message).catch(() => { });
     }
   }
 }

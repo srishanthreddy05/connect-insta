@@ -41,7 +41,7 @@ async function testDm(req, res, next) {
 
     const result = await metaService.sendDM({
       instagramId,
-      pageAccessToken: account.pageAccessToken,
+      accessToken: account.accessToken,
       recipientIgUserId: recipientId,
       messageText: message,
       reqId,
@@ -122,7 +122,9 @@ async function resubscribe(req, res, next) {
       return res.status(404).json({ ok: false, error: "Connected account not found" });
     }
 
-    const result = await metaService.subscribeAppToIG(instagramId, account.pageAccessToken, reqId);
+    // TO:
+    const result = await metaService.subscribeAppToIG(instagramId, account.accessToken, reqId);
+
     res.json({ ok: true, message: "Webhook subscription renewed", data: result });
   } catch (err) {
     next(err);
@@ -142,7 +144,7 @@ async function checkSubscription(req, res, next) {
       return res.status(404).json({ ok: false, error: "Connected account not found" });
     }
 
-    const data = await metaService.checkSubscription(instagramId, account.pageAccessToken);
+    const data = await metaService.checkSubscription(instagramId, account.accessToken);
     res.json({ ok: true, data });
   } catch (err) {
     next(err);

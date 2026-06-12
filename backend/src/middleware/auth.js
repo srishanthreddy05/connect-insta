@@ -13,13 +13,15 @@
  * For the initial build, the userId is read from the X-User-Id header.
  * Replace with decoded JWT sub claim in production.
  */
+const config = require("../config");
+
 function requireAuth(req, res, next) {
   const apiKey = req.headers["x-api-key"];
   const userId = req.headers["x-user-id"];
 
   // In production: verify JWT, extract userId from token claims
   // For now: require both headers
-  if (!apiKey || apiKey !== process.env.ADMIN_API_KEY) {
+  if (!apiKey || apiKey !== config.meta.adminApiKey) {
     return res.status(401).json({ ok: false, error: "unauthorized", message: "Invalid or missing API key." });
   }
 

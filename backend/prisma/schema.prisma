@@ -10,25 +10,21 @@ datasource db {
 }
 
 model ConnectedAccount {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   userId            String
-  pageId    String?  @unique
-pageName  String?
-  instagramId       String   @unique
+  instagramId       String    @unique
   instagramUsername String?
-  pageAccessToken   String
-  userAccessToken   String?  // ✅ add this
-    webhookInstagramId String?  
-  connectedAt       DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  isActive          Boolean  @default(true)
+  accessToken       String
+  tokenExpiresAt    DateTime?
+  connectedAt       DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  isActive          Boolean   @default(true)
 
   automations Automation[]
 
   @@index([userId])
   @@map("connected_accounts")
 }
-
 model Automation {
   id              String    @id @default(cuid())
   userId          String

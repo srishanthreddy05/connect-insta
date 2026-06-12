@@ -11,6 +11,7 @@ const app = express();
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(cors());
+app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(attachReqId); // Attaches req.reqId for structured logging
 
@@ -26,12 +27,12 @@ app.listen(config.app.port, () => {
   console.log(`🚀 Instagram Automation Backend v2.0`);
   console.log(`   Port     : ${config.app.port}`);
   console.log(`   Mode     : ${config.app.nodeEnv}`);
-  console.log(`   Redirect : ${config.meta.redirectUri}`);
-  console.log("═".repeat(55));
-  console.log("🛠  Config check:");
-  console.log(`   APP_ID               ${config.meta.appId ? "✅" : "❌ MISSING"}`);
-  console.log(`   APP_SECRET           ${config.meta.appSecret ? "✅" : "❌ MISSING"}`);
-  console.log(`   WEBHOOK_VERIFY_TOKEN ${config.meta.webhookVerifyToken ? "✅" : "❌ MISSING"}`);
+console.log(`   Redirect : ${config.meta.igRedirectUri}`);
+console.log("═".repeat(55));
+console.log("🛠  Config check:");
+console.log(`   IG_APP_ID            ${config.meta.igAppId ? "✅" : "❌ MISSING"}`);
+console.log(`   IG_APP_SECRET        ${config.meta.igAppSecret ? "✅" : "❌ MISSING"}`);
+console.log(`   WEBHOOK_VERIFY_TOKEN ${config.meta.webhookVerifyToken ? "✅" : "❌ MISSING"}`);
   console.log(`   DATABASE_URL         ${process.env.DATABASE_URL ? "✅" : "❌ MISSING"}`);
   console.log(`   ENCRYPTION_KEY       ${process.env.ENCRYPTION_KEY ? "✅" : "❌ MISSING"}`);
   console.log("═".repeat(55));
