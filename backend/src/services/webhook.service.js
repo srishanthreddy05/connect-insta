@@ -51,6 +51,9 @@ function parseWebhookBody(body) {
       // Loop prevention - skip bot's own outgoing messages
       if (senderId === igAccountId) continue;
 
+      if (!message.message) continue;          // ← ADD THIS: skip read receipts
+      if (!message.message.text) continue;     // ← ADD THIS: skip messages with no text
+
       events.push({
         instagramId: igAccountId,
         eventId: message.message?.mid || `dm:${igAccountId}:${Date.now()}`,
