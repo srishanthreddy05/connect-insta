@@ -68,13 +68,12 @@ async function igTokenCallback(req, res, next) {
     // Step 3: Fetch IG username + webhook-compatible ID
     // Step 3: Fetch IG username + webhook-compatible ID
     const igProfile = await axios.get(`https://graph.instagram.com/v25.0/me`, {
-      params: { fields: "id,username", access_token: longToken },
+      params: { fields: "id,user_id,username", access_token: longToken },
     });
 
     const igUsername = igProfile.data.username;
 
-    const igProfessionalId = igProfile.data.id;
-
+    const igProfessionalId = igProfile.data.user_id;
     const account = await connectedAccountRepo.upsertFromIg({
       userId,
       instagramId: igProfessionalId,
