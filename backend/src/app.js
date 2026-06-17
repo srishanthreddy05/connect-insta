@@ -35,6 +35,9 @@ console.log(`   IG_APP_SECRET        ${config.meta.igAppSecret ? "✅" : "❌ MI
 console.log(`   WEBHOOK_VERIFY_TOKEN ${config.meta.webhookVerifyToken ? "✅" : "❌ MISSING"}`);
   console.log(`   DATABASE_URL         ${process.env.DATABASE_URL ? "✅" : "❌ MISSING"}`);
   console.log(`   ENCRYPTION_KEY       ${process.env.ENCRYPTION_KEY ? "✅" : "❌ MISSING"}`);
+  console.log(`   FIREBASE_PROJECT_ID  ${process.env.FIREBASE_PROJECT_ID ? "✅" : "❌ MISSING"}`);
+  console.log(`   FIREBASE_CLIENT_EMAIL ${process.env.FIREBASE_CLIENT_EMAIL ? "✅" : "❌ MISSING"}`);
+  console.log(`   FIREBASE_PRIVATE_KEY ${process.env.FIREBASE_PRIVATE_KEY ? "✅" : "❌ MISSING"}`);
   console.log("═".repeat(55));
   console.log("📋 Setup checklist:");
   console.log("   1. GET /auth/login?userId=<id>  — connect an IG account");
