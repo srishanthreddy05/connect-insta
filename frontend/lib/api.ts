@@ -12,7 +12,6 @@ import type {
   SubscriptionStatus,
 } from "./types";
 import { auth } from "./firebase";
-import { onAuthStateChanged, type User } from "firebase/auth";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -25,17 +24,10 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     "Content-Type": "application/json",
   };
 
-  // Wait for the auth state to resolve if it's currently null (prevents race conditions)
-  let user = auth.currentUser;
-  if (!user) {
-    user = await new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
-        unsubscribe();
-        resolve(firebaseUser);
-      });
-    });
-  }
+  // Wait for Firebase Auth to complete loading the persistence state from IndexedDB
+  await auth.authStateReady();
 
+  const user = auth.currentUser;
   if (user) {
     // getIdToken(true) forces a refresh if the token is close to expiry
     const token = await user.getIdToken();
