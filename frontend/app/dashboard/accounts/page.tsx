@@ -27,6 +27,7 @@ export default function AccountsPage() {
   const { userId } = useAuth();
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [subStatus, setSubStatus] = useState<
     Record<string, "checking" | "active" | "inactive" | "error">
   >({});
@@ -34,10 +35,13 @@ export default function AccountsPage() {
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const accts = await getAccounts();
       setAccounts(accts);
-    } catch {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setFetchError(msg);
       setAccounts([]);
     } finally {
       setLoading(false);
@@ -110,6 +114,35 @@ export default function AccountsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Debug info — shows in production to diagnose API issues */}
+      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs font-mono space-y-1 animate-fade-in">
+        <p className="text-muted-foreground">
+          <span className="text-foreground font-semibold">API →</span>{" "}
+          {typeof window !== "undefined" && window.location.hostname !== "localhost"
+            ? "https://connect-insta.onrender.com"
+            : "http://localhost:3000"}
+          /connected-accounts
+        </p>
+        <p className="text-muted-foreground">
+          <span className="text-foreground font-semibold">User ID →</span>{" "}
+          {userId || <span className="text-destructive">MISSING</span>}
+        </p>
+        <p className="text-muted-foreground">
+          <span className="text-foreground font-semibold">API Key →</span>{" "}
+          {typeof window !== "undefined" && localStorage.getItem("ig_api_key")
+            ? `${localStorage.getItem("ig_api_key")!.slice(0, 4)}****`
+            : <span className="text-destructive">MISSING</span>}
+        </p>
+      </div>
+
+      {/* Error banner */}
+      {fetchError && (
+        <div className="rounded-xl bg-destructive/10 border border-destructive/30 px-4 py-3 text-sm text-destructive animate-fade-in">
+          <p className="font-semibold">API Error:</p>
+          <p className="mt-1 font-mono text-xs">{fetchError}</p>
+        </div>
+      )}
 
       {/* Accounts list */}
       {loading ? (
