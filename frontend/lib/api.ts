@@ -12,7 +12,11 @@ import type {
   SubscriptionStatus,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost"
+    ? "https://connect-insta.onrender.com"
+    : "http://localhost:3000");
 
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
