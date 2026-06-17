@@ -9,6 +9,7 @@ interface KeywordInputProps {
   onChange: (keywords: string[]) => void;
   placeholder?: string;
   className?: string;
+  onInputChange?: (val: string) => void;
 }
 
 export function KeywordInput({
@@ -16,6 +17,7 @@ export function KeywordInput({
   onChange,
   placeholder = "Type a keyword and press Enter…",
   className,
+  onInputChange,
 }: KeywordInputProps) {
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,10 @@ export function KeywordInput({
         ref={inputRef}
         type="text"
         value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
+        onChange={(e) => {
+          setInputValue(e.target.value);
+          onInputChange?.(e.target.value);
+        }}
         onKeyDown={handleKeyDown}
         placeholder={value.length === 0 ? placeholder : ""}
         className="min-w-[120px] flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"

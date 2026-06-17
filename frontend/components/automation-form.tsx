@@ -48,10 +48,12 @@ export function AutomationForm({
   const [name, setName] = useState("");
   const [instagramId, setInstagramId] = useState("");
   const [keywords, setKeywords] = useState<string[]>([]);
+  const [pendingKeyword, setPendingKeyword] = useState("");
   const [matchType, setMatchType] = useState<MatchType>("CONTAINS");
   const [triggerType, setTriggerType] = useState<TriggerType>("COMMENT");
   const [responseMessage, setResponseMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isEditing = Boolean(automation);
 
@@ -75,17 +77,34 @@ export function AutomationForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+
+    // Auto-commit any text the user typed but didn't press Enter for
+    const flushedKeywords = [...keywords];
+    const trimmed = pendingKeyword.trim().toLowerCase();
+    if (trimmed && !flushedKeywords.includes(trimmed)) {
+      flushedKeywords.push(trimmed);
+      setKeywords(flushedKeywords);
+    }
+
+    if (triggerType === "COMMENT" && flushedKeywords.length === 0) {
+      setSubmitError("Add at least one keyword.");
+      return;
+    }
+
     setSaving(true);
     try {
       await onSubmit({
         instagramId,
         name,
-        keywords,
+        keywords: flushedKeywords,
         matchType,
         responseMessage,
         triggerType,
       });
       onOpenChange(false);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to save automation.");
     } finally {
       setSaving(false);
     }
@@ -165,9 +184,13 @@ export function AutomationForm({
             <label className="text-sm font-medium text-muted-foreground">
               Keywords
             </label>
-            <KeywordInput value={keywords} onChange={setKeywords} />
+            <KeywordInput
+              value={keywords}
+              onChange={setKeywords}
+              onInputChange={setPendingKeyword}
+            />
             <p className="text-xs text-muted-foreground/70">
-              Press Enter or comma to add. Multiple keywords use OR logic.
+              Press Enter or comma to add — or just click Create, it&apos;ll add it automatically.
             </p>
           </div>
 
@@ -209,6 +232,13 @@ export function AutomationForm({
               className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
             />
           </div>
+
+          {/* Error */}
+          {submitError && (
+            <p className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2 text-sm text-destructive animate-fade-in">
+              {submitError}
+            </p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
