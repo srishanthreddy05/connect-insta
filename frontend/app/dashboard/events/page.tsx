@@ -22,7 +22,11 @@ import { getWebhookEvents, getAccounts, testWebhook, testDm } from "@/lib/api";
 import type { WebhookEvent, ConnectedAccount } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { useAuth } from "@/lib/auth-context";
+
 export default function EventsPage() {
+  const { user } = useAuth();
+  const userId = user?.uid;
   const [events, setEvents] = useState<WebhookEvent[]>([]);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,11 +64,13 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [testForm.instagramId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (userId) {
+      fetchData();
+    }
+  }, [fetchData, userId]);
 
   const filtered = events.filter((e) => {
     const matchesFilter =

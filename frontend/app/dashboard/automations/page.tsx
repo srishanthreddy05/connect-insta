@@ -29,7 +29,11 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { useAuth } from "@/lib/auth-context";
+
 export default function AutomationsPage() {
+  const { user } = useAuth();
+  const userId = user?.uid;
   const [automations, setAutomations] = useState<Automation[]>([]);
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +57,10 @@ export default function AutomationsPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (userId) {
+      fetchData();
+    }
+  }, [fetchData, userId]);
 
   const handleCreate = async (payload: CreateAutomationPayload) => {
     await createAutomation(payload);

@@ -50,8 +50,10 @@ export default function AccountsPage() {
   }, []);
 
   useEffect(() => {
-    fetchAccounts();
-  }, [fetchAccounts]);
+    if (userId) {
+      fetchAccounts();
+    }
+  }, [fetchAccounts, userId]);
 
   const handleCheckSubscription = async (instagramId: string) => {
     setSubStatus((prev) => ({ ...prev, [instagramId]: "checking" }));

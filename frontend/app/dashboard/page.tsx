@@ -35,8 +35,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (userId) {
+      fetchData();
+    }
+  }, [userId]);
 
   const activeAutomations = automations.filter((a) => a.isActive);
   const recentEvents = events.slice(0, 5);
