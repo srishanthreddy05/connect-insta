@@ -12,12 +12,18 @@ let initialized = false;
  */
 function getFirebaseAdmin() {
   if (!initialized) {
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY || "";
+    privateKey = privateKey.trim();
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.slice(1, -1);
+    }
+    privateKey = privateKey.replace(/\\n/g, "\n");
+
     admin.initializeApp({
       credential: admin.credential.cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        // Render/Vercel store the key as a single-line string with literal \n
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+        privateKey,
       }),
     });
     initialized = true;
