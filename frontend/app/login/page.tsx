@@ -1,40 +1,62 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { Zap, ArrowRight, Shield } from "lucide-react";
+import { Zap, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
+// Google G SVG icon
+function GoogleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
 
 export default function LoginPage() {
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, signInWithGoogle } = useAuth();
   const router = useRouter();
-  const [userId, setUserId] = useState("");
-  const [apiKey, setApiKey] = useState("");
+  const [signing, setSigning] = useState(false);
   const [error, setError] = useState("");
 
-  // Redirect if already logged in
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoading && isAuthenticated) {
       router.replace("/dashboard");
     }
   }, [isLoading, isAuthenticated, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSignIn = async () => {
     setError("");
-
-    if (!userId.trim()) {
-      setError("User ID is required");
-      return;
+    setSigning(true);
+    try {
+      await signInWithGoogle();
+      // onAuthStateChanged fires → AuthProvider sets user → useEffect above redirects
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign-in failed";
+      // Ignore popup-closed-by-user
+      if (!msg.includes("popup-closed")) {
+        setError(msg);
+      }
+    } finally {
+      setSigning(false);
     }
-    if (!apiKey.trim()) {
-      setError("API Key is required");
-      return;
-    }
-
-    login(userId.trim(), apiKey.trim());
   };
 
   if (isLoading) {
@@ -47,14 +69,14 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex flex-1 items-center justify-center px-4 overflow-hidden">
-      {/* Ambient background glow */}
+      {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-primary/8 blur-[120px]" />
         <div className="absolute right-1/4 bottom-1/4 h-80 w-80 rounded-full bg-chart-2/8 blur-[120px]" />
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-72 rounded-full bg-chart-3/6 blur-[100px]" />
       </div>
 
-      <div className="relative w-full max-w-md animate-fade-in-up">
+      <div className="relative w-full max-w-sm animate-fade-in-up">
         {/* Brand */}
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center justify-center rounded-2xl ig-gradient-bg p-4 shadow-2xl glow-lg">
@@ -68,69 +90,39 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login card */}
+        {/* Card */}
         <div className="glass rounded-3xl p-8 glow-sm">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label
-                htmlFor="userId"
-                className="text-sm font-medium text-muted-foreground"
-              >
-                User ID
-              </label>
-              <Input
-                id="userId"
-                type="text"
-                placeholder="Enter your user ID"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                className="h-12 rounded-xl bg-input/50 text-base"
-                autoFocus
-              />
-            </div>
+          <p className="mb-6 text-center text-sm text-muted-foreground">
+            Sign in to manage your Instagram automations
+          </p>
 
-            <div className="space-y-2">
-              <label
-                htmlFor="apiKey"
-                className="text-sm font-medium text-muted-foreground"
-              >
-                API Key
-              </label>
-              <Input
-                id="apiKey"
-                type="password"
-                placeholder="Enter your API key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="h-12 rounded-xl bg-input/50 text-base"
-              />
-            </div>
-
-            {error && (
-              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive animate-fade-in">
-                {error}
-              </p>
+          <Button
+            onClick={handleGoogleSignIn}
+            disabled={signing}
+            className="w-full h-12 rounded-xl bg-white text-gray-800 hover:bg-gray-50 border border-gray-200 shadow-sm font-medium text-sm flex items-center gap-3 transition-all hover:shadow-md"
+          >
+            {signing ? (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+            ) : (
+              <GoogleIcon />
             )}
+            {signing ? "Signing in…" : "Continue with Google"}
+          </Button>
 
-            <Button
-              type="submit"
-              className="w-full h-12 rounded-xl ig-gradient-bg text-white text-base font-semibold border-0 shadow-lg hover:opacity-90 transition-all hover:glow-md group"
-            >
-              Sign In
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Button>
-          </form>
+          {error && (
+            <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive animate-fade-in text-center">
+              {error}
+            </p>
+          )}
 
           <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <Shield className="h-3.5 w-3.5" />
-            <span>Secured with API key authentication</span>
+            <span>Secured with Google OAuth + Firebase Auth</span>
           </div>
         </div>
 
-        {/* Footer text */}
         <p className="mt-6 text-center text-xs text-muted-foreground/50">
-          Enter the User ID and Admin API Key configured in your backend&apos;s
-          environment variables.
+          Your Google account is used only for authentication.
         </p>
       </div>
     </div>

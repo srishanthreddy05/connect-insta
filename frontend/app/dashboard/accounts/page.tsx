@@ -24,7 +24,8 @@ import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 export default function AccountsPage() {
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.uid || "";
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -113,27 +114,6 @@ export default function AccountsPage() {
             Connect Account
           </Button>
         </div>
-      </div>
-
-      {/* Debug info — shows in production to diagnose API issues */}
-      <div className="rounded-xl border border-border bg-muted/20 px-4 py-3 text-xs font-mono space-y-1 animate-fade-in">
-        <p className="text-muted-foreground">
-          <span className="text-foreground font-semibold">API →</span>{" "}
-          {typeof window !== "undefined" && window.location.hostname !== "localhost"
-            ? "https://connect-insta.onrender.com"
-            : "http://localhost:3000"}
-          /connected-accounts
-        </p>
-        <p className="text-muted-foreground">
-          <span className="text-foreground font-semibold">User ID →</span>{" "}
-          {userId || <span className="text-destructive">MISSING</span>}
-        </p>
-        <p className="text-muted-foreground">
-          <span className="text-foreground font-semibold">API Key →</span>{" "}
-          {typeof window !== "undefined" && localStorage.getItem("ig_api_key")
-            ? `${localStorage.getItem("ig_api_key")!.slice(0, 4)}****`
-            : <span className="text-destructive">MISSING</span>}
-        </p>
       </div>
 
       {/* Error banner */}

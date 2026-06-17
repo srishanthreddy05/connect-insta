@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -24,8 +25,12 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { userId, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  const displayName = user?.displayName || user?.email || "User";
+  const photoURL = user?.photoURL;
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <>
@@ -107,20 +112,33 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Footer */}
+        {/* User footer */}
         <div className="border-t border-sidebar-border px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/15 text-sm font-bold text-primary">
-              {userId?.charAt(0)?.toUpperCase() || "U"}
-            </div>
+            {/* Google profile photo or initials */}
+            {photoURL ? (
+              <Image
+                src={photoURL}
+                alt={displayName}
+                width={36}
+                height={36}
+                className="h-9 w-9 rounded-full ring-2 ring-primary/20"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full ig-gradient-bg text-sm font-bold text-white">
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-medium">{userId || "User"}</p>
-              <p className="truncate text-xs text-muted-foreground">Dashboard</p>
+              <p className="truncate text-sm font-medium">{displayName}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user?.email || ""}
+              </p>
             </div>
             <button
-              onClick={logout}
+              onClick={signOut}
               className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
-              title="Logout"
+              title="Sign out"
             >
               <LogOut className="h-4 w-4" />
             </button>

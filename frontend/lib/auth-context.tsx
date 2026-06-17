@@ -1,64 +1,59 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  type User,
+} from "firebase/auth";
+import { auth, googleProvider } from "./firebase";
 import { useRouter } from "next/navigation";
 
-interface AuthState {
+interface AuthContextType {
+  user: User | null;
   userId: string;
-  apiKey: string;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (userId: string, apiKey: string) => void;
-  logout: () => void;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthState>({
-  userId: "",
-  apiKey: "",
-  isAuthenticated: false,
-  isLoading: true,
-  login: () => {},
-  logout: () => {},
-});
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [userId, setUserId] = useState("");
-  const [apiKey, setApiKey] = useState("");
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const storedUserId = localStorage.getItem("ig_user_id") || "";
-    const storedApiKey = localStorage.getItem("ig_api_key") || "";
-    setUserId(storedUserId);
-    setApiKey(storedApiKey);
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setIsLoading(false);
+    });
+    return unsubscribe;
   }, []);
 
-  const login = useCallback(
-    (newUserId: string, newApiKey: string) => {
-      localStorage.setItem("ig_user_id", newUserId);
-      localStorage.setItem("ig_api_key", newApiKey);
-      setUserId(newUserId);
-      setApiKey(newApiKey);
-      router.push("/dashboard");
-    },
-    [router]
-  );
+  const signInWithGoogle = async () => {
+    await signInWithPopup(auth, googleProvider);
+    // onAuthStateChanged will fire and update user state automatically
+  };
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("ig_user_id");
-    localStorage.removeItem("ig_api_key");
-    setUserId("");
-    setApiKey("");
-    router.push("/login");
-  }, [router]);
-
-  const isAuthenticated = Boolean(userId && apiKey);
+  const signOut = async () => {
+    await firebaseSignOut(auth);
+    // No auto-redirect — let the user stay on the page or navigate manually
+  };
 
   return (
     <AuthContext.Provider
-      value={{ userId, apiKey, isAuthenticated, isLoading, login, logout }}
+      value={{
+        user,
+        userId: user?.uid ?? "",
+        isAuthenticated: Boolean(user),
+        isLoading,
+        signInWithGoogle,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
@@ -66,22 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }
 
-/**
- * Hook that redirects to /login if user is not authenticated.
- * Use in dashboard pages.
- */
 export function useRequireAuth() {
-  const auth = useAuth();
+  const authCtx = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated) {
+    if (!authCtx.isLoading && !authCtx.isAuthenticated) {
       router.replace("/login");
     }
-  }, [auth.isLoading, auth.isAuthenticated, router]);
+  }, [authCtx.isLoading, authCtx.isAuthenticated, router]);
 
-  return auth;
+  return authCtx;
 }

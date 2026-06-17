@@ -11,6 +11,7 @@ import type {
   TestDmPayload,
   SubscriptionStatus,
 } from "./types";
+import { auth } from "./firebase";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -18,15 +19,19 @@ const API_BASE =
     ? "https://connect-insta.onrender.com"
     : "http://localhost:3000");
 
-function getAuthHeaders(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  const apiKey = localStorage.getItem("ig_api_key") || "";
-  const userId = localStorage.getItem("ig_user_id") || "";
-  return {
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "X-Api-Key": apiKey,
-    "X-User-Id": userId,
   };
+
+  const user = auth.currentUser;
+  if (user) {
+    // getIdToken(true) forces a refresh if the token is close to expiry
+    const token = await user.getIdToken();
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 async function request<T>(
@@ -34,7 +39,11 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   const url = `${API_BASE}${path}`;
-  const headers = { ...getAuthHeaders(), ...(options.headers as Record<string, string> || {}) };
+  const authHeaders = await getAuthHeaders();
+  const headers = {
+    ...authHeaders,
+    ...((options.headers as Record<string, string>) || {}),
+  };
 
   const res = await fetch(url, { ...options, headers });
   const json = await res.json();
