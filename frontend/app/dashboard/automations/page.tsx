@@ -1,0 +1,297 @@
+"use client";
+
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Zap,
+  Search,
+  RefreshCw,
+  ToggleLeft,
+  ToggleRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { AutomationForm } from "@/components/automation-form";
+import {
+  getAutomations,
+  getAccounts,
+  createAutomation,
+  updateAutomation,
+  deleteAutomation,
+} from "@/lib/api";
+import type {
+  Automation,
+  ConnectedAccount,
+  CreateAutomationPayload,
+} from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+export default function AutomationsPage() {
+  const [automations, setAutomations] = useState<Automation[]>([]);
+  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Automation | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [autos, accts] = await Promise.all([
+        getAutomations().catch(() => []),
+        getAccounts().catch(() => []),
+      ]);
+      setAutomations(autos);
+      setAccounts(accts);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleCreate = async (payload: CreateAutomationPayload) => {
+    await createAutomation(payload);
+    await fetchData();
+  };
+
+  const handleUpdate = async (payload: CreateAutomationPayload) => {
+    if (!editing) return;
+    await updateAutomation(editing.id, payload);
+    setEditing(null);
+    await fetchData();
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleting(id);
+    try {
+      await deleteAutomation(id);
+      await fetchData();
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleToggle = async (automation: Automation) => {
+    await updateAutomation(automation.id, { isActive: !automation.isActive });
+    await fetchData();
+  };
+
+  const filtered = automations.filter(
+    (a) =>
+      a.name.toLowerCase().includes(search.toLowerCase()) ||
+      a.keywords.some((k) => k.includes(search.toLowerCase())) ||
+      a.responseMessage.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const getAccountUsername = (instagramId: string) => {
+    const account = accounts.find((a) => a.instagramId === instagramId);
+    return account?.instagramUsername
+      ? `@${account.instagramUsername}`
+      : instagramId;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">
+            Automations
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage keyword triggers and auto-responses for your Instagram accounts.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={fetchData}
+            variant="ghost"
+            size="icon"
+            className="rounded-xl"
+            disabled={loading}
+          >
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+          </Button>
+          <Button
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+            className="rounded-xl ig-gradient-bg text-white border-0 hover:opacity-90 transition-opacity"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Automation
+          </Button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="relative animate-fade-in-up stagger-1">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search automations by name, keyword, or message…"
+          className="h-11 rounded-xl bg-input/50 pl-10"
+        />
+      </div>
+
+      {/* Automations list */}
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="glass rounded-2xl p-6 animate-pulse"
+            >
+              <div className="h-5 w-48 rounded-lg bg-muted" />
+              <div className="mt-3 h-4 w-72 rounded-lg bg-muted" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="glass rounded-2xl p-12 text-center animate-fade-in-up">
+          <Zap className="mx-auto mb-4 h-12 w-12 text-muted-foreground/30" />
+          <p className="text-lg font-medium">
+            {search ? "No automations match your search" : "No automations yet"}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {search
+              ? "Try a different search term"
+              : "Create your first automation to start auto-responding to comments and DMs."}
+          </p>
+          {!search && (
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+              className="mt-6 rounded-xl ig-gradient-bg text-white border-0 hover:opacity-90"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Automation
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((automation, index) => (
+            <div
+              key={automation.id}
+              className={cn(
+                "glass rounded-2xl p-5 transition-all duration-200 hover:glow-sm animate-fade-in-up",
+                !automation.isActive && "opacity-60"
+              )}
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
+              <div className="flex items-start gap-4">
+                {/* Toggle */}
+                <button
+                  onClick={() => handleToggle(automation)}
+                  className="mt-0.5 shrink-0 transition-colors"
+                  title={automation.isActive ? "Deactivate" : "Activate"}
+                >
+                  {automation.isActive ? (
+                    <ToggleRight className="h-6 w-6 text-emerald-400" />
+                  ) : (
+                    <ToggleLeft className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </button>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h3 className="font-semibold">{automation.name}</h3>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "rounded-lg text-xs",
+                        automation.triggerType === "COMMENT"
+                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
+                          : "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                      )}
+                    >
+                      {automation.triggerType === "COMMENT" ? "💬 Comment" : "✉️ DM"}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="rounded-lg text-xs bg-muted/50 text-muted-foreground border-muted"
+                    >
+                      {automation.matchType}
+                    </Badge>
+                  </div>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {getAccountUsername(automation.instagramId)}
+                  </p>
+
+                  {/* Keywords */}
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {automation.keywords.map((kw, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                      >
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Response preview */}
+                  {automation.responseMessage && (
+                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+                      → {automation.responseMessage}
+                    </p>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg"
+                    onClick={() => {
+                      setEditing(automation);
+                      setFormOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/15"
+                    onClick={() => handleDelete(automation.id)}
+                    disabled={deleting === automation.id}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Form dialog */}
+      <AutomationForm
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) setEditing(null);
+        }}
+        accounts={accounts}
+        automation={editing}
+        onSubmit={editing ? handleUpdate : handleCreate}
+      />
+    </div>
+  );
+}
