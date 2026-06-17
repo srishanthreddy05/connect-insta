@@ -52,6 +52,10 @@ export function AutomationForm({
   const [matchType, setMatchType] = useState<MatchType>("CONTAINS");
   const [triggerType, setTriggerType] = useState<TriggerType>("COMMENT");
   const [responseMessage, setResponseMessage] = useState("");
+  const [greeting, setGreeting] = useState("");
+  const [choice1, setChoice1] = useState("");
+  const [choice2, setChoice2] = useState("");
+  const [fallback, setFallback] = useState("Please reply with 1 or 2");
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -64,7 +68,20 @@ export function AutomationForm({
       setKeywords(automation.keywords);
       setMatchType(automation.matchType);
       setTriggerType(automation.triggerType);
-      setResponseMessage(automation.responseMessage);
+      setResponseMessage(automation.responseMessage || "");
+
+      if (automation.triggerType === "DM" && automation.flowSteps) {
+        const flow = automation.flowSteps as any;
+        setGreeting(flow.greeting || "");
+        setChoice1(flow.choices?.["1"] || "");
+        setChoice2(flow.choices?.["2"] || "");
+        setFallback(flow.fallback || "Please reply with 1 or 2");
+      } else {
+        setGreeting("");
+        setChoice1("");
+        setChoice2("");
+        setFallback("Please reply with 1 or 2");
+      }
     } else {
       setName("");
       setInstagramId(accounts[0]?.instagramId || "");
@@ -72,6 +89,10 @@ export function AutomationForm({
       setMatchType("CONTAINS");
       setTriggerType("COMMENT");
       setResponseMessage("");
+      setGreeting("");
+      setChoice1("");
+      setChoice2("");
+      setFallback("Please reply with 1 or 2");
     }
   }, [automation, accounts, open]);
 
@@ -87,21 +108,45 @@ export function AutomationForm({
       setKeywords(flushedKeywords);
     }
 
-    if (triggerType === "COMMENT" && flushedKeywords.length === 0) {
-      setSubmitError("Add at least one keyword.");
+    if (flushedKeywords.length === 0) {
+      setSubmitError("Add at least one trigger keyword.");
       return;
+    }
+
+    if (triggerType === "COMMENT" && !responseMessage) {
+      setSubmitError("Response message is required for comment triggers.");
+      return;
+    }
+
+    if (triggerType === "DM" && (!greeting || !choice1 || !choice2)) {
+      setSubmitError("Greeting, Option 1 Reply, and Option 2 Reply are all required for DM triggers.");
+      return;
+    }
+
+    const payload: CreateAutomationPayload = {
+      instagramId,
+      name,
+      keywords: flushedKeywords,
+      matchType: triggerType === "DM" ? "CONTAINS" : matchType,
+      responseMessage: triggerType === "COMMENT" ? responseMessage : "",
+      triggerType,
+    };
+
+    if (triggerType === "DM") {
+      payload.flowSteps = {
+        triggers: flushedKeywords,
+        greeting,
+        choices: {
+          "1": choice1,
+          "2": choice2,
+        },
+        fallback: fallback || "Please reply with 1 or 2",
+      };
     }
 
     setSaving(true);
     try {
-      await onSubmit({
-        instagramId,
-        name,
-        keywords: flushedKeywords,
-        matchType,
-        responseMessage,
-        triggerType,
-      });
+      await onSubmit(payload);
       onOpenChange(false);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Failed to save automation.");
@@ -194,44 +239,112 @@ export function AutomationForm({
             </p>
           </div>
 
-          {/* Match type */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Match Type
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {matchTypes.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => setMatchType(m.value)}
-                  className={cn(
-                    "rounded-xl border px-3 py-2.5 text-xs font-medium transition-all",
-                    matchType === m.value
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-input bg-input/30 text-muted-foreground hover:border-primary/30"
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* COMMENT fields */}
+          {triggerType === "COMMENT" && (
+            <>
+              {/* Match type */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Match Type
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {matchTypes.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => setMatchType(m.value)}
+                      className={cn(
+                        "rounded-xl border px-3 py-2.5 text-xs font-medium transition-all",
+                        matchType === m.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-input bg-input/30 text-muted-foreground hover:border-primary/30"
+                      )}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Response message */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Response Message
-            </label>
-            <textarea
-              value={responseMessage}
-              onChange={(e) => setResponseMessage(e.target.value)}
-              placeholder="The DM message to send when triggered…"
-              rows={3}
-              required={triggerType === "COMMENT"}
-              className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
-            />
-          </div>
+              {/* Response message */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Response Message
+                </label>
+                <textarea
+                  value={responseMessage}
+                  onChange={(e) => setResponseMessage(e.target.value)}
+                  placeholder="The DM message to send when triggered…"
+                  rows={3}
+                  required
+                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
+                />
+              </div>
+            </>
+          )}
+
+          {/* DM fields */}
+          {triggerType === "DM" && (
+            <>
+              {/* Greeting message */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Greeting Message
+                </label>
+                <textarea
+                  value={greeting}
+                  onChange={(e) => setGreeting(e.target.value)}
+                  placeholder="Hey! 👋 How can I help you?&#10;1. Pricing&#10;2. Details"
+                  rows={3}
+                  required
+                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              {/* Option 1 reply */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Option 1 Reply
+                </label>
+                <textarea
+                  value={choice1}
+                  onChange={(e) => setChoice1(e.target.value)}
+                  placeholder="Our pricing: Basic $99/mo..."
+                  rows={2}
+                  required
+                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              {/* Option 2 reply */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Option 2 Reply
+                </label>
+                <textarea
+                  value={choice2}
+                  onChange={(e) => setChoice2(e.target.value)}
+                  placeholder="Details: We help automate..."
+                  rows={2}
+                  required
+                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
+                />
+              </div>
+
+              {/* Fallback message */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Fallback Message (invalid input)
+                </label>
+                <Input
+                  value={fallback}
+                  onChange={(e) => setFallback(e.target.value)}
+                  placeholder="Please reply with 1 or 2"
+                  className="bg-input/50"
+                />
+              </div>
+            </>
+          )}
 
           {/* Error */}
           {submitError && (
