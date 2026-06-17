@@ -2,6 +2,7 @@
 "use strict";
 
 const { getFirebaseAdmin } = require("../config/firebase-admin");
+const { getAuth } = require("firebase-admin/auth");
 
 /**
  * Firebase Auth middleware.
@@ -25,8 +26,8 @@ async function requireAuth(req, res, next) {
   const idToken = authHeader.slice(7); // strip "Bearer "
 
   try {
-    const admin = getFirebaseAdmin();
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const app = getFirebaseAdmin();
+    const decoded = await getAuth(app).verifyIdToken(idToken);
     req.userId = decoded.uid;
     req.userEmail = decoded.email || null;
     next();

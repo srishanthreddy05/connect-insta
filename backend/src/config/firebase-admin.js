@@ -1,9 +1,7 @@
 // src/config/firebase-admin.js
 "use strict";
 
-const admin = require("firebase-admin");
-
-let initialized = false;
+const { initializeApp, cert, getApps, getApp } = require("firebase-admin");
 
 /**
  * Returns the firebase-admin instance, initializing it on first call.
@@ -11,7 +9,7 @@ let initialized = false;
  * JSON never needs to be committed to the repo.
  */
 function getFirebaseAdmin() {
-  if (!initialized) {
+  if (getApps().length === 0) {
     let privateKey = process.env.FIREBASE_PRIVATE_KEY || "";
     privateKey = privateKey.trim();
     if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
@@ -19,16 +17,15 @@ function getFirebaseAdmin() {
     }
     privateKey = privateKey.replace(/\\n/g, "\n");
 
-    admin.initializeApp({
-      credential: admin.credential.cert({
+    initializeApp({
+      credential: cert({
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         privateKey,
       }),
     });
-    initialized = true;
   }
-  return admin;
+  return getApp();
 }
 
 module.exports = { getFirebaseAdmin };
