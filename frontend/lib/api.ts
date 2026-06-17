@@ -12,6 +12,7 @@ import type {
   SubscriptionStatus,
 } from "./types";
 import { auth } from "./firebase";
+import { onAuthStateChanged, type User } from "firebase/auth";
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -24,7 +25,17 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     "Content-Type": "application/json",
   };
 
-  const user = auth.currentUser;
+  // Wait for the auth state to resolve if it's currently null (prevents race conditions)
+  let user = auth.currentUser;
+  if (!user) {
+    user = await new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser: User | null) => {
+        unsubscribe();
+        resolve(firebaseUser);
+      });
+    });
+  }
+
   if (user) {
     // getIdToken(true) forces a refresh if the token is close to expiry
     const token = await user.getIdToken();
@@ -38,7 +49,10 @@ async function request<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
-  const url = `${API_BASE}${path}`;
+  // Ensure we don't have double slashes in the URL (except after http:// or https://)
+  // Double-slash redirects by the server strip the Authorization header on cross-origin requests
+  const rawUrl = `${API_BASE}${path}`;
+  const url = rawUrl.replace(/([^:]\/)\/+/g, "$1");
   const authHeaders = await getAuthHeaders();
   const headers = {
     ...authHeaders,
