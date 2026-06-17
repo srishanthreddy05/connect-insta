@@ -58,6 +58,7 @@ async function upsertFromIg({ userId, instagramId, instagramUsername, accessToke
   tokenExpiresAt: tokenExpiresAt || null,
 },
 update: {
+  userId,
   instagramUsername,
   accessToken: encrypt(accessToken),
   tokenExpiresAt: tokenExpiresAt || null,

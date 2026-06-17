@@ -1,22 +1,32 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!isLoading) {
-      router.replace(isAuthenticated ? "/dashboard" : "/login");
+      const connected = searchParams.get("connected");
+      if (isAuthenticated) {
+        // If coming back from OAuth, go to accounts page so they see the new account
+        router.replace(connected === "true" ? "/dashboard/accounts" : "/dashboard");
+      } else {
+        router.replace("/login");
+      }
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, searchParams]);
 
   return (
     <div className="flex flex-1 items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="space-y-3 text-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+        <p className="text-sm text-muted-foreground animate-pulse">Redirecting…</p>
+      </div>
     </div>
   );
 }
