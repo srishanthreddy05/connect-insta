@@ -18,9 +18,7 @@ async function syncMediaForAccount(instagramId, force = false, reqId = "sys") {
   const db = getDb();
 
   // 1. Fetch connected account
-  const account = await db.connectedAccount.findUnique({
-    where: { instagramId },
-  });
+  const account = await connectedAccountRepo.findByInstagramId(instagramId);
 
   if (!account) {
     throw new Error(`Connected account not found for Instagram ID: ${instagramId}`);
