@@ -10,12 +10,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { KeywordInput } from "@/components/keyword-input";
+import { RefreshCw, Image } from "lucide-react";
+import { getInstagramMedia } from "@/lib/api";
 import type {
   Automation,
   ConnectedAccount,
   CreateAutomationPayload,
   MatchType,
   TriggerType,
+  InstagramMedia,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +62,29 @@ export function AutomationForm({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const [applyToAllPosts, setApplyToAllPosts] = useState(true);
+  const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const [mediaList, setMediaList] = useState<InstagramMedia[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+
+  const fetchMedia = async (igId: string, force = false) => {
+    if (!igId) {
+      setMediaList([]);
+      return;
+    }
+    setLoadingMedia(true);
+    setMediaError(null);
+    try {
+      const media = await getInstagramMedia(igId, force);
+      setMediaList(media);
+    } catch (err: any) {
+      setMediaError(err.message || "Failed to load Instagram media.");
+    } finally {
+      setLoadingMedia(false);
+    }
+  };
+
   const isEditing = Boolean(automation);
 
   useEffect(() => {
@@ -69,6 +95,8 @@ export function AutomationForm({
       setMatchType(automation.matchType);
       setTriggerType(automation.triggerType);
       setResponseMessage(automation.responseMessage || "");
+      setApplyToAllPosts(automation.applyToAllPosts);
+      setSelectedMediaIds(automation.selectedMedia?.map((m) => m.mediaId) || []);
 
       if (automation.triggerType === "DM" && automation.flowSteps) {
         const flow = automation.flowSteps as any;
@@ -82,19 +110,33 @@ export function AutomationForm({
         setChoice2("");
         setFallback("Please reply with 1 or 2");
       }
+
+      fetchMedia(automation.instagramId, false);
     } else {
       setName("");
-      setInstagramId(accounts[0]?.instagramId || "");
+      const initialIgId = accounts[0]?.instagramId || "";
+      setInstagramId(initialIgId);
       setKeywords([]);
       setMatchType("CONTAINS");
       setTriggerType("COMMENT");
       setResponseMessage("");
+      setApplyToAllPosts(true);
+      setSelectedMediaIds([]);
       setGreeting("");
       setChoice1("");
       setChoice2("");
       setFallback("Please reply with 1 or 2");
+
+      fetchMedia(initialIgId, false);
     }
   }, [automation, accounts, open]);
+
+  const handleAccountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedId = e.target.value;
+    setInstagramId(selectedId);
+    setSelectedMediaIds([]);
+    fetchMedia(selectedId, false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,6 +172,8 @@ export function AutomationForm({
       matchType: triggerType === "DM" ? "CONTAINS" : matchType,
       responseMessage: triggerType === "COMMENT" ? responseMessage : "",
       triggerType,
+      applyToAllPosts,
+      selectedMediaIds: applyToAllPosts ? [] : selectedMediaIds,
     };
 
     if (triggerType === "DM") {
@@ -186,7 +230,7 @@ export function AutomationForm({
             </label>
             <select
               value={instagramId}
-              onChange={(e) => setInstagramId(e.target.value)}
+              onChange={handleAccountChange}
               required
               className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring/30 transition-all"
             >
@@ -265,6 +309,145 @@ export function AutomationForm({
                   ))}
                 </div>
               </div>
+
+              {/* Trigger Scope */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Trigger Scope
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setApplyToAllPosts(true)}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-medium transition-all",
+                      applyToAllPosts
+                        ? "border-primary bg-primary/10 text-primary glow-sm"
+                        : "border-input bg-input/30 text-muted-foreground hover:border-primary/30"
+                    )}
+                  >
+                    All Posts
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setApplyToAllPosts(false)}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-medium transition-all",
+                      !applyToAllPosts
+                        ? "border-primary bg-primary/10 text-primary glow-sm"
+                        : "border-input bg-input/30 text-muted-foreground hover:border-primary/30"
+                    )}
+                  >
+                    Selected Posts
+                  </button>
+                </div>
+              </div>
+
+              {/* Instagram Media list */}
+              {!applyToAllPosts && (
+                <div className="space-y-2 border-t border-border/40 pt-4 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Select Instagram Posts/Reels ({selectedMediaIds.length} selected)
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fetchMedia(instagramId, true)}
+                      disabled={loadingMedia}
+                      className="h-8 px-2 text-xs rounded-lg text-primary hover:bg-primary/10"
+                    >
+                      <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", loadingMedia && "animate-spin")} />
+                      Sync Feed
+                    </Button>
+                  </div>
+
+                  {loadingMedia && mediaList.length === 0 ? (
+                    <div className="grid grid-cols-3 gap-2 py-4">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="aspect-square rounded-xl bg-muted animate-pulse" />
+                      ))}
+                    </div>
+                  ) : mediaError ? (
+                    <p className="text-xs text-destructive py-2">{mediaError}</p>
+                  ) : mediaList.length === 0 ? (
+                    <div className="text-center py-6 border border-dashed rounded-xl bg-input/20">
+                      <p className="text-xs text-muted-foreground">No supported media (Reels, Images, Videos) found.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1 py-1">
+                      {mediaList.map((media) => {
+                        const isSelected = selectedMediaIds.includes(media.mediaId);
+                        return (
+                          <div
+                            key={media.mediaId}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedMediaIds(selectedMediaIds.filter((id) => id !== media.mediaId));
+                              } else {
+                                setSelectedMediaIds([...selectedMediaIds, media.mediaId]);
+                              }
+                            }}
+                            className={cn(
+                              "relative group aspect-square rounded-xl overflow-hidden border cursor-pointer select-none transition-all duration-200",
+                              isSelected 
+                                ? "border-primary ring-2 ring-primary/40 scale-[0.98]" 
+                                : "border-border/60 hover:border-primary/40 bg-muted/40"
+                            )}
+                          >
+                            {/* Thumbnail */}
+                            {media.mediaUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={media.mediaUrl}
+                                alt={media.caption || "Instagram Media"}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-muted">
+                                <Image className="h-6 w-6 text-muted-foreground/40" />
+                              </div>
+                            )}
+
+                            {/* Overlay info */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-2 opacity-90 group-hover:opacity-100 transition-opacity">
+                              <span className="text-[10px] text-white font-medium line-clamp-2 leading-tight">
+                                {media.caption || "No caption"}
+                              </span>
+                            </div>
+
+                            {/* Badge */}
+                            <div className="absolute top-1.5 left-1.5">
+                              <span className={cn(
+                                "text-[9px] font-semibold px-1.5 py-0.5 rounded-full text-white shadow-sm",
+                                media.mediaType === "REELS" ? "bg-pink-500" :
+                                media.mediaType === "VIDEO" ? "bg-blue-500" : "bg-emerald-500"
+                              )}>
+                                {media.mediaType === "REELS" ? "Reel" : 
+                                 media.mediaType === "VIDEO" ? "Video" : "Image"}
+                              </span>
+                            </div>
+
+                            {/* Checkbox overlay */}
+                            <div className={cn(
+                              "absolute top-1.5 right-1.5 w-4 h-4 rounded border flex items-center justify-center transition-all",
+                              isSelected
+                                ? "bg-primary border-primary text-white scale-110"
+                                : "bg-black/40 border-white/60 text-transparent"
+                            )}>
+                              <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                              </svg>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Response message */}
               <div className="space-y-2">

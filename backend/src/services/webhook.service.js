@@ -78,7 +78,7 @@ async function processWebhook(body, reqId) {
   }
 
   for (const event of events) {
-    const { instagramId, eventId, eventType, commentText, commenterId } = event;
+    const { instagramId, eventId, eventType, commentText, commenterId, mediaId } = event;
 
     // ── Step 1: Deduplication ──────────────────────────────────────────────
     const { created, event: dbEvent } = await webhookEventRepo.createIfNew({
@@ -141,7 +141,7 @@ async function processWebhook(body, reqId) {
       }
 
       // ── Step 4: Find matching automation ──────────────────────────────
-      const automation = await findMatchingAutomation(instagramId, commentText);
+      const automation = await findMatchingAutomation(instagramId, commentText, mediaId, reqId);
       if (!automation) {
         logger.info(reqId, `ℹ️ No matching automation for comment`, {
           instagramId,

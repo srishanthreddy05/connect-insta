@@ -2,6 +2,7 @@
 "use strict";
 
 const automationRepo = require("../repositories/automation.repository");
+const { logger } = require("../utils/logger");
 
 /**
  * Normalizes a string for comparison:
@@ -46,20 +47,65 @@ function matchesKeyword(commentText, keywords, matchType) {
   });
 }
 
+function getMatchedKeyword(commentText, keywords, matchType) {
+  const text = normalize(commentText);
+  if (!text || !keywords?.length) return null;
+
+  for (const kw of keywords) {
+    const keyword = normalize(kw);
+    let matched = false;
+    switch (matchType) {
+      case "EXACT":
+        matched = text === keyword;
+        break;
+      case "STARTS_WITH":
+        matched = text.startsWith(keyword);
+        break;
+      case "CONTAINS":
+      default:
+        matched = text.includes(keyword);
+        break;
+    }
+    if (matched) return kw;
+  }
+  return null;
+}
+
 /**
- * Loads all active automations for an Instagram account and returns the first match.
- * Returns null if no automation matches the comment.
- *
- * @param {string} instagramId
- * @param {string} commentText
- * @returns {object|null} matched automation or null
+ * Loads all active automations for an Instagram account and returns the first match that satisfies keyword and scope.
+ * Returns null if no automation matches the comment and scope.
  */
-async function findMatchingAutomation(instagramId, commentText) {
+async function findMatchingAutomation(instagramId, commentText, mediaId = null, reqId = "sys") {
   const automations = await automationRepo.findActiveByInstagramId(instagramId);
 
   for (const automation of automations) {
-    if (matchesKeyword(commentText, automation.keywords, automation.matchType)) {
-      return automation;
+    const matchedKeyword = getMatchedKeyword(commentText, automation.keywords, automation.matchType);
+    
+    if (matchedKeyword) {
+      const applyToAll = automation.applyToAllPosts;
+      const selectedMediaList = automation.selectedMedia || [];
+      const hasMediaMatch = selectedMediaList.some((m) => m.mediaId === mediaId);
+
+      // Decision logic
+      let decision = "IGNORE";
+      if (applyToAll || hasMediaMatch) {
+        decision = "TRIGGER";
+      }
+
+      // Logging
+      logger.info(reqId, `⚙️ Automation Trigger Evaluation`, {
+        automationId: automation.id,
+        automationName: automation.name,
+        matchedKeyword,
+        incomingMediaId: mediaId,
+        matchedMedia: hasMediaMatch,
+        applyToAll,
+        decision,
+      });
+
+      if (decision === "TRIGGER") {
+        return automation;
+      }
     }
   }
 

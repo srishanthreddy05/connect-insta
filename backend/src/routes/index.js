@@ -28,6 +28,7 @@ router.get("/automations", requireAuth, automationCtrl.list);
 router.post("/automations", requireAuth, automationCtrl.create);
 router.put("/automations/:id", requireAuth, automationCtrl.update);
 router.delete("/automations/:id", requireAuth, automationCtrl.remove);
+router.get("/instagram/media", requireAuth, automationCtrl.getMedia);
 
 // ── Admin / Diagnostics ────────────────────────────────────────────────────
 router.get("/admin/webhook-events", requireAuth, adminCtrl.listWebhookEvents);

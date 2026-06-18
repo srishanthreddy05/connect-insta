@@ -67,6 +67,7 @@ async function testWebhook(req, res, next) {
       instagramId,
       commentText = "price",
       commenterId = "TEST_USER_123",
+      mediaId = "MEDIA_TEST_123",
     } = req.body;
 
     if (!instagramId) {
@@ -84,7 +85,7 @@ async function testWebhook(req, res, next) {
               field: "comments",
               value: {
                 from: { id: commenterId, username: "test_user" },
-                media: { id: "MEDIA_TEST_123", media_product_type: "POST" },
+                media: { id: mediaId, media_product_type: "POST" },
                 id: `TEST_COMMENT_${Date.now()}`,
                 text: commentText,
               },

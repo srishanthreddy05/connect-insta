@@ -5,6 +5,7 @@ const axios = require("axios");
 const config = require("../config");
 const metaService = require("../services/meta.service");
 const connectedAccountRepo = require("../repositories/connectedAccount.repository");
+const instagramMediaService = require("../services/instagramMedia.service");
 const { logger, maskToken } = require("../utils/logger");
 
 
@@ -92,6 +93,13 @@ async function igTokenCallback(req, res, next) {
 
       logger.warn(reqId, `⚠️ Webhook subscription failed (non-fatal)`, { error: e.message });
     }
+    try {
+      await instagramMediaService.syncMediaForAccount(igProfessionalId, true, reqId);
+      logger.info(reqId, `📸 Initial Instagram media sync complete`, { igProfessionalId });
+    } catch (e) {
+      logger.warn(reqId, `⚠️ Initial Instagram media sync failed (non-fatal)`, { error: e.message });
+    }
+
     res.redirect(`${frontendUrl}?connected=true`);
 
   } catch (err) {

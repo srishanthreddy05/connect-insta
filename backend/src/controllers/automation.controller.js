@@ -3,6 +3,8 @@
 
 const automationService = require("../services/automation.service");
 const connectedAccountRepo = require("../repositories/connectedAccount.repository");
+const instagramMediaService = require("../services/instagramMedia.service");
+const { getDb } = require("../config/db");
 const { logger } = require("../utils/logger");
 
 /**
@@ -34,7 +36,7 @@ async function list(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps } = req.body;
+    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds } = req.body;
 
     if (!instagramId) return res.status(400).json({ ok: false, error: "instagramId is required" });
     if (!name) return res.status(400).json({ ok: false, error: "name is required" });
@@ -62,6 +64,26 @@ async function create(req, res, next) {
       return res.status(403).json({ ok: false, error: "Instagram account not found or not authorized" });
     }
 
+    const resolvedApplyToAll = applyToAllPosts !== undefined ? applyToAllPosts : true;
+    const resolvedMediaIds = selectedMediaIds || [];
+
+    // Validate ownership of selected media
+    if (!resolvedApplyToAll && resolvedMediaIds.length > 0) {
+      const db = getDb();
+      const mediaCount = await db.instagramMedia.count({
+        where: {
+          mediaId: { in: resolvedMediaIds },
+          instagramId,
+        },
+      });
+      if (mediaCount !== resolvedMediaIds.length) {
+        return res.status(400).json({
+          ok: false,
+          error: "One or more selected media items do not belong to this Instagram account.",
+        });
+      }
+    }
+
     const automation = await automationService.createAutomation({
       userId: req.userId,
       instagramId,
@@ -71,6 +93,8 @@ async function create(req, res, next) {
       responseMessage: responseMessage || "",
       triggerType: resolvedTriggerType,
       flowSteps: flowSteps || null,
+      applyToAllPosts: resolvedApplyToAll,
+      selectedMediaIds: resolvedMediaIds,
     });
 
     logger.info(req.reqId, `✅ Automation created`, { id: automation.id, name });
@@ -95,13 +119,33 @@ async function update(req, res, next) {
       return res.status(403).json({ ok: false, error: "Not authorized" });
     }
 
-    const { name, keywords, matchType, responseMessage, isActive } = req.body;
+    const { name, keywords, matchType, responseMessage, isActive, applyToAllPosts, selectedMediaIds } = req.body;
+
+    // Validate ownership of selected media if they are being updated
+    if (applyToAllPosts === false && selectedMediaIds && selectedMediaIds.length > 0) {
+      const db = getDb();
+      const mediaCount = await db.instagramMedia.count({
+        where: {
+          mediaId: { in: selectedMediaIds },
+          instagramId: existing.instagramId,
+        },
+      });
+      if (mediaCount !== selectedMediaIds.length) {
+        return res.status(400).json({
+          ok: false,
+          error: "One or more selected media items do not belong to this Instagram account.",
+        });
+      }
+    }
+
     const updated = await automationService.updateAutomation(id, {
       name,
       keywords,
       matchType,
       responseMessage,
       isActive,
+      applyToAllPosts,
+      selectedMediaIds,
     });
 
     logger.info(req.reqId, `✅ Automation updated`, { id });
@@ -134,4 +178,42 @@ async function remove(req, res, next) {
   }
 }
 
-module.exports = { list, create, update, remove };
+/**
+ * GET /instagram/media
+ * Query: ?instagramId=...&force=...
+ * Retrieves recent media for an Instagram account, syncing if stale (or forced).
+ */
+async function getMedia(req, res, next) {
+  try {
+    const { instagramId, force } = req.query;
+    if (!instagramId) {
+      return res.status(400).json({ ok: false, error: "instagramId is required" });
+    }
+
+    const account = await connectedAccountRepo.findByInstagramId(instagramId);
+    if (!account || account.userId !== req.userId) {
+      return res.status(403).json({ ok: false, error: "Instagram account not found or not authorized" });
+    }
+
+    const forceSync = force === "true";
+    try {
+      await instagramMediaService.syncMediaForAccount(instagramId, forceSync, req.reqId);
+    } catch (syncErr) {
+      logger.error(req.reqId, `⚠️ Stale media sync failed (non-fatal), falling back to DB`, {
+        error: syncErr.message,
+      });
+    }
+
+    const db = getDb();
+    const media = await db.instagramMedia.findMany({
+      where: { instagramId },
+      orderBy: { timestamp: "desc" },
+    });
+
+    res.json({ ok: true, data: media });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { list, create, update, remove, getMedia };

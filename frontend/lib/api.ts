@@ -10,6 +10,7 @@ import type {
   TestWebhookPayload,
   TestDmPayload,
   SubscriptionStatus,
+  InstagramMedia,
 } from "./types";
 import { auth } from "./firebase";
 
@@ -102,6 +103,15 @@ export async function updateAutomation(
 
 export async function deleteAutomation(id: string): Promise<void> {
   await request(`/automations/${id}`, { method: "DELETE" });
+}
+
+export async function getInstagramMedia(
+  instagramId: string,
+  forceRefresh?: boolean
+): Promise<InstagramMedia[]> {
+  const query = forceRefresh ? `?instagramId=${instagramId}&force=true` : `?instagramId=${instagramId}`;
+  const res = await request<InstagramMedia[]>(`/instagram/media${query}`);
+  return res.data || [];
 }
 
 // ── Admin / Diagnostics ───────────────────────────────────────────────────────

@@ -22,8 +22,10 @@ model ConnectedAccount {
   connectedAt       DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   isActive          Boolean   @default(true)
+  mediaLastSyncedAt DateTime?
 
   automations Automation[]
+  media       InstagramMedia[]
 
   @@index([userId])
   @@map("connected_accounts")
@@ -41,12 +43,30 @@ model Automation {
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  applyToAllPosts Boolean   @default(true)
 
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
+  selectedMedia    InstagramMedia[]
 
   @@index([userId])
   @@index([instagramId])
   @@map("automations")
+}
+
+model InstagramMedia {
+  id          String   @id @default(cuid())
+  mediaId     String   @unique
+  instagramId String
+  caption     String?
+  mediaType   String   // REELS, IMAGE, VIDEO
+  mediaUrl    String?
+  timestamp   DateTime
+
+  connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId], onDelete: Cascade)
+  automations      Automation[]
+
+  @@index([instagramId])
+  @@map("instagram_media")
 }
 model ConversationState {
   id          String   @id @default(cuid())

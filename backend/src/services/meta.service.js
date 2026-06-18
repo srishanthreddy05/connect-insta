@@ -66,6 +66,32 @@ async function sendDM({ instagramId, accessToken, recipientIgUserId, messageText
 
 
 
+async function fetchRecentMedia(instagramId, accessToken, limit = 50, reqId = "sys") {
+  if (!accessToken) throw new Error(`[fetchRecentMedia] Access token required for account ${instagramId}`);
+  logger.info(reqId, "📸 Fetching recent media from Graph API", { instagramId });
+
+  try {
+    const res = await axios.get(
+      `https://graph.instagram.com/v25.0/me/media`,
+      {
+        params: {
+          fields: "id,caption,media_type,media_product_type,media_url,thumbnail_url,timestamp",
+          access_token: accessToken,
+          limit,
+        },
+      }
+    );
+    return res.data?.data || [];
+  } catch (error) {
+    logger.error(reqId, "❌ Fetching media failed", {
+      instagramId,
+      status: error.response?.status,
+      error: error.response?.data || error.message,
+    });
+    throw error;
+  }
+}
+
 function parseGraphError(error) {
   return {
     status: error.response?.status || 500,
@@ -78,4 +104,5 @@ module.exports = {
   checkSubscription,
   sendDM,
   parseGraphError,
+  fetchRecentMedia,
 };

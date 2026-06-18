@@ -10,7 +10,10 @@ const { getDb } = require("../config/db");
 async function findActiveByInstagramId(instagramId) {
   const db = getDb();
   return db.automation.findMany({
-    where: { instagramId, isActive: true, triggerType: "COMMENT" }, // ← ADD triggerType filter
+    where: { instagramId, isActive: true, triggerType: "COMMENT" },
+    include: {
+      selectedMedia: true,
+    },
     orderBy: { createdAt: "asc" },
   });
 }
@@ -21,17 +24,25 @@ async function findAllByUserId(userId) {
   const db = getDb();
   return db.automation.findMany({
     where: { userId },
+    include: {
+      selectedMedia: true,
+    },
     orderBy: { createdAt: "desc" },
   });
 }
 
 async function findById(id) {
   const db = getDb();
-  return db.automation.findUnique({ where: { id } });
+  return db.automation.findUnique({
+    where: { id },
+    include: {
+      selectedMedia: true,
+    },
+  });
 }
 
 
-async function create({ userId, instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps }) {
+async function create({ userId, instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds }) {
   const db = getDb();
   return db.automation.create({
     data: {
@@ -43,12 +54,19 @@ async function create({ userId, instagramId, name, keywords, matchType, response
       responseMessage,
       triggerType,
       flowSteps,
+      applyToAllPosts: applyToAllPosts !== undefined ? applyToAllPosts : true,
       isActive: true,
+      selectedMedia: {
+        connect: (selectedMediaIds || []).map((mediaId) => ({ mediaId })),
+      },
+    },
+    include: {
+      selectedMedia: true,
     },
   });
 }
 
-async function update(id, { name, keywords, matchType, responseMessage, isActive, triggerType, flowSteps }) {
+async function update(id, { name, keywords, matchType, responseMessage, isActive, triggerType, flowSteps, applyToAllPosts, selectedMediaIds }) {
   const db = getDb();
   const data = {};
   if (name !== undefined) data.name = name;
@@ -58,8 +76,20 @@ async function update(id, { name, keywords, matchType, responseMessage, isActive
   if (isActive !== undefined) data.isActive = isActive;
   if (triggerType !== undefined) data.triggerType = triggerType;
   if (flowSteps !== undefined) data.flowSteps = flowSteps;
+  if (applyToAllPosts !== undefined) data.applyToAllPosts = applyToAllPosts;
+  if (selectedMediaIds !== undefined) {
+    data.selectedMedia = {
+      set: selectedMediaIds.map((mediaId) => ({ mediaId })),
+    };
+  }
 
-  return db.automation.update({ where: { id }, data });
+  return db.automation.update({
+    where: { id },
+    data,
+    include: {
+      selectedMedia: true,
+    },
+  });
 }
 
 

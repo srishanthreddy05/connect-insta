@@ -12,6 +12,16 @@ export interface ConnectedAccount {
 export type MatchType = "CONTAINS" | "EXACT" | "STARTS_WITH";
 export type TriggerType = "COMMENT" | "DM";
 
+export interface InstagramMedia {
+  id: string;
+  mediaId: string;
+  instagramId: string;
+  caption: string | null;
+  mediaType: "REELS" | "IMAGE" | "VIDEO";
+  mediaUrl: string | null;
+  timestamp: string;
+}
+
 export interface Automation {
   id: string;
   userId: string;
@@ -25,6 +35,8 @@ export interface Automation {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  applyToAllPosts: boolean;
+  selectedMedia?: InstagramMedia[];
 }
 
 export interface CreateAutomationPayload {
@@ -35,6 +47,8 @@ export interface CreateAutomationPayload {
   responseMessage: string;
   triggerType?: TriggerType;
   flowSteps?: Record<string, unknown> | null;
+  applyToAllPosts?: boolean;
+  selectedMediaIds?: string[];
 }
 
 export interface UpdateAutomationPayload {
@@ -45,6 +59,8 @@ export interface UpdateAutomationPayload {
   isActive?: boolean;
   triggerType?: TriggerType;
   flowSteps?: Record<string, unknown> | null;
+  applyToAllPosts?: boolean;
+  selectedMediaIds?: string[];
 }
 
 export interface WebhookEvent {
