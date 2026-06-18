@@ -49,13 +49,29 @@ model Automation {
   triggerCount         Int       @default(0)
   commentsRepliedCount Int       @default(0)
   dmsSentCount         Int       @default(0)
+  openingMessage       String?
 
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
   selectedMedia    InstagramMedia[]
+  messages         AutomationMessage[]
 
   @@index([userId])
   @@index([instagramId])
   @@map("automations")
+}
+
+model AutomationMessage {
+  id           String     @id @default(cuid())
+  automationId String
+  message      String
+  order        Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+  @@map("automation_messages")
 }
 
 model InstagramMedia {

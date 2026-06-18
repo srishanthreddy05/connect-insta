@@ -36,7 +36,7 @@ async function list(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage } = req.body;
+    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage, openingMessage, messages } = req.body;
 
     if (!instagramId) return res.status(400).json({ ok: false, error: "instagramId is required" });
     if (!name) return res.status(400).json({ ok: false, error: "name is required" });
@@ -57,7 +57,17 @@ async function create(req, res, next) {
         }
       }
     } else {
-      if (!flowSteps) return res.status(400).json({ ok: false, error: "flowSteps is required for DM triggers" });
+      if (!openingMessage || !openingMessage.trim()) {
+        return res.status(400).json({ ok: false, error: "openingMessage is required for DM triggers" });
+      }
+      // Check each non-empty message in messages array
+      const validMessages = (messages || []).filter(msg => typeof msg === "string" ? msg.trim() : msg?.message?.trim());
+      for (const msg of validMessages) {
+        const text = typeof msg === "string" ? msg : msg?.message;
+        if (!text || !text.trim()) {
+          return res.status(400).json({ ok: false, error: "Sequential message text must not be empty" });
+        }
+      }
     }
 
     const validMatchTypes = ["CONTAINS", "EXACT", "STARTS_WITH"];
@@ -104,6 +114,8 @@ async function create(req, res, next) {
       selectedMediaIds: resolvedMediaIds,
       enableCommentReply: resolvedEnableCommentReply,
       commentReplyMessage: resolvedEnableCommentReply ? commentReplyMessage : null,
+      openingMessage: resolvedTriggerType === "DM" ? openingMessage : null,
+      messages: resolvedTriggerType === "DM" ? (messages || []).filter(msg => typeof msg === "string" ? msg.trim() : msg?.message?.trim()) : [],
     });
 
     logger.info(req.reqId, `✅ Automation created`, { id: automation.id, name });
@@ -128,7 +140,7 @@ async function update(req, res, next) {
       return res.status(403).json({ ok: false, error: "Not authorized" });
     }
 
-    const { name, keywords, matchType, responseMessage, isActive, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage } = req.body;
+    const { name, keywords, matchType, responseMessage, isActive, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage, openingMessage, messages } = req.body;
 
     // Validate ownership of selected media if they are being updated
     if (applyToAllPosts === false && selectedMediaIds && selectedMediaIds.length > 0) {
@@ -156,6 +168,23 @@ async function update(req, res, next) {
       }
     }
 
+    const resolvedTriggerType = existing.triggerType;
+    const resolvedOpeningMessage = openingMessage !== undefined ? openingMessage : existing.openingMessage;
+    if (resolvedTriggerType === "DM") {
+      if (!resolvedOpeningMessage || !resolvedOpeningMessage.trim()) {
+        return res.status(400).json({ ok: false, error: "openingMessage is required for DM triggers" });
+      }
+      if (messages !== undefined) {
+        const validMessages = messages.filter(msg => typeof msg === "string" ? msg.trim() : msg?.message?.trim());
+        for (const msg of validMessages) {
+          const text = typeof msg === "string" ? msg : msg?.message;
+          if (!text || !text.trim()) {
+            return res.status(400).json({ ok: false, error: "Sequential message text must not be empty" });
+          }
+        }
+      }
+    }
+
     const updated = await automationService.updateAutomation(id, {
       name,
       keywords,
@@ -166,6 +195,8 @@ async function update(req, res, next) {
       selectedMediaIds,
       enableCommentReply: resolvedEnableCommentReply,
       commentReplyMessage: resolvedEnableCommentReply ? resolvedCommentReplyMessage : null,
+      openingMessage: resolvedTriggerType === "DM" ? resolvedOpeningMessage : null,
+      messages: resolvedTriggerType === "DM" && messages !== undefined ? messages.filter(msg => typeof msg === "string" ? msg.trim() : msg?.message?.trim()) : undefined,
     });
 
     logger.info(req.reqId, `✅ Automation updated`, { id });

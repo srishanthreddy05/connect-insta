@@ -22,6 +22,15 @@ export interface InstagramMedia {
   timestamp: string;
 }
 
+export interface AutomationMessage {
+  id: string;
+  automationId: string;
+  message: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Automation {
   id: string;
   userId: string;
@@ -42,6 +51,8 @@ export interface Automation {
   triggerCount: number;
   commentsRepliedCount: number;
   dmsSentCount: number;
+  openingMessage: string | null;
+  messages: AutomationMessage[];
 }
 
 export interface CreateAutomationPayload {
@@ -56,6 +67,8 @@ export interface CreateAutomationPayload {
   selectedMediaIds?: string[];
   enableCommentReply?: boolean;
   commentReplyMessage?: string | null;
+  openingMessage?: string | null;
+  messages?: (string | { message: string; order?: number })[];
 }
 
 export interface UpdateAutomationPayload {
@@ -70,6 +83,8 @@ export interface UpdateAutomationPayload {
   selectedMediaIds?: string[];
   enableCommentReply?: boolean;
   commentReplyMessage?: string | null;
+  openingMessage?: string | null;
+  messages?: (string | { message: string; order?: number })[];
 }
 
 export interface WebhookEvent {

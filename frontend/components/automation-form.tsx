@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { KeywordInput } from "@/components/keyword-input";
-import { RefreshCw, Image } from "lucide-react";
+import { RefreshCw, Image, Trash2, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import { getInstagramMedia } from "@/lib/api";
 import type {
   Automation,
@@ -55,10 +55,8 @@ export function AutomationForm({
   const [matchType, setMatchType] = useState<MatchType>("CONTAINS");
   const [triggerType, setTriggerType] = useState<TriggerType>("COMMENT");
   const [responseMessage, setResponseMessage] = useState("");
-  const [greeting, setGreeting] = useState("");
-  const [choice1, setChoice1] = useState("");
-  const [choice2, setChoice2] = useState("");
-  const [fallback, setFallback] = useState("Please reply with 1 or 2");
+  const [openingMessage, setOpeningMessage] = useState("");
+  const [messages, setMessages] = useState<string[]>([]);
   const [enableCommentReply, setEnableCommentReply] = useState(false);
   const [commentReplyMessage, setCommentReplyMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -89,6 +87,40 @@ export function AutomationForm({
 
   const isEditing = Boolean(automation);
 
+  const handleAddMessage = () => {
+    setMessages([...messages, ""]);
+  };
+
+  const handleRemoveMessage = (index: number) => {
+    const next = [...messages];
+    next.splice(index, 1);
+    setMessages(next);
+  };
+
+  const handleUpdateMessage = (index: number, text: string) => {
+    const next = [...messages];
+    next[index] = text;
+    setMessages(next);
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const next = [...messages];
+    const temp = next[index];
+    next[index] = next[index - 1];
+    next[index - 1] = temp;
+    setMessages(next);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === messages.length - 1) return;
+    const next = [...messages];
+    const temp = next[index];
+    next[index] = next[index + 1];
+    next[index + 1] = temp;
+    setMessages(next);
+  };
+
   useEffect(() => {
     if (automation) {
       setName(automation.name);
@@ -102,17 +134,12 @@ export function AutomationForm({
       setEnableCommentReply(automation.enableCommentReply || false);
       setCommentReplyMessage(automation.commentReplyMessage || "");
 
-      if (automation.triggerType === "DM" && automation.flowSteps) {
-        const flow = automation.flowSteps as any;
-        setGreeting(flow.greeting || "");
-        setChoice1(flow.choices?.["1"] || "");
-        setChoice2(flow.choices?.["2"] || "");
-        setFallback(flow.fallback || "Please reply with 1 or 2");
+      if (automation.triggerType === "DM") {
+        setOpeningMessage(automation.openingMessage || "");
+        setMessages(automation.messages?.map((m) => m.message) || [""]);
       } else {
-        setGreeting("");
-        setChoice1("");
-        setChoice2("");
-        setFallback("Please reply with 1 or 2");
+        setOpeningMessage("");
+        setMessages([""]);
       }
 
       fetchMedia(automation.instagramId, false);
@@ -128,10 +155,8 @@ export function AutomationForm({
       setSelectedMediaIds([]);
       setEnableCommentReply(false);
       setCommentReplyMessage("");
-      setGreeting("");
-      setChoice1("");
-      setChoice2("");
-      setFallback("Please reply with 1 or 2");
+      setOpeningMessage("");
+      setMessages([""]);
 
       fetchMedia(initialIgId, false);
     }
@@ -171,10 +196,12 @@ export function AutomationForm({
       return;
     }
 
-    if (triggerType === "DM" && (!greeting || !choice1 || !choice2)) {
-      setSubmitError("Greeting, Option 1 Reply, and Option 2 Reply are all required for DM triggers.");
+    if (triggerType === "DM" && !openingMessage.trim()) {
+      setSubmitError("Opening message is required for DM triggers.");
       return;
     }
+
+    const validMessages = messages.map(msg => msg.trim()).filter(Boolean);
 
     const payload: CreateAutomationPayload = {
       instagramId,
@@ -187,19 +214,9 @@ export function AutomationForm({
       selectedMediaIds: applyToAllPosts ? [] : selectedMediaIds,
       enableCommentReply: triggerType === "COMMENT" ? enableCommentReply : false,
       commentReplyMessage: (triggerType === "COMMENT" && enableCommentReply) ? commentReplyMessage : null,
+      openingMessage: triggerType === "DM" ? openingMessage : null,
+      messages: triggerType === "DM" ? validMessages : [],
     };
-
-    if (triggerType === "DM") {
-      payload.flowSteps = {
-        triggers: flushedKeywords,
-        greeting,
-        choices: {
-          "1": choice1,
-          "2": choice2,
-        },
-        fallback: fallback || "Please reply with 1 or 2",
-      };
-    }
 
     setSaving(true);
     try {
@@ -520,65 +537,97 @@ export function AutomationForm({
 
           {/* DM fields */}
           {triggerType === "DM" && (
-            <>
-              {/* Greeting message */}
+            <div className="space-y-5 animate-fade-in">
+              {/* Opening message */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-muted-foreground">
-                  Greeting Message
+                  Opening Message
                 </label>
                 <textarea
-                  value={greeting}
-                  onChange={(e) => setGreeting(e.target.value)}
-                  placeholder="Hey! 👋 How can I help you?&#10;1. Pricing&#10;2. Details"
+                  value={openingMessage}
+                  onChange={(e) => setOpeningMessage(e.target.value)}
+                  placeholder="Hey! 👋 Thanks for reaching out. Here is the info..."
                   rows={3}
                   required
                   className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
                 />
+                <p className="text-[10px] text-muted-foreground/70">
+                  This message is sent immediately when a DM matches your keywords.
+                </p>
               </div>
 
-              {/* Option 1 reply */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Option 1 Reply
-                </label>
-                <textarea
-                  value={choice1}
-                  onChange={(e) => setChoice1(e.target.value)}
-                  placeholder="Our pricing: Basic $99/mo..."
-                  rows={2}
-                  required
-                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
-                />
-              </div>
+              {/* Sequential follow-up messages */}
+              <div className="space-y-3 pt-2 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Sequential Messages ({messages.length})
+                  </label>
+                </div>
 
-              {/* Option 2 reply */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Option 2 Reply
-                </label>
-                <textarea
-                  value={choice2}
-                  onChange={(e) => setChoice2(e.target.value)}
-                  placeholder="Details: We help automate..."
-                  rows={2}
-                  required
-                  className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
-                />
-              </div>
+                <div className="space-y-3">
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      className="glass rounded-xl border border-border/50 p-3.5 space-y-2.5 relative transition-all duration-200 hover:border-primary/20 bg-input/10 animate-fade-in"
+                    >
+                      {/* Card Header controls */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground/90">
+                          Message {index + 1}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveUp(index)}
+                            disabled={index === 0}
+                            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            title="Move up"
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveDown(index)}
+                            disabled={index === messages.length - 1}
+                            className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                            title="Move down"
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMessage(index)}
+                            className="p-1 rounded text-destructive hover:bg-destructive/10 transition-all ml-1"
+                            title="Delete message"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
 
-              {/* Fallback message */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Fallback Message (invalid input)
-                </label>
-                <Input
-                  value={fallback}
-                  onChange={(e) => setFallback(e.target.value)}
-                  placeholder="Please reply with 1 or 2"
-                  className="bg-input/50"
-                />
+                      {/* Textarea */}
+                      <textarea
+                        value={msg}
+                        onChange={(e) => handleUpdateMessage(index, e.target.value)}
+                        placeholder={`Message ${index + 1} content...`}
+                        rows={2}
+                        className="w-full rounded-lg border border-input bg-input/30 px-3 py-2 text-xs outline-none resize-none focus:ring-2 focus:ring-ring/20 transition-all"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={handleAddMessage}
+                  variant="outline"
+                  className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-dashed border-primary/40 text-primary bg-primary/5 hover:bg-primary/10 px-4 py-2.5 text-xs font-semibold transition-all duration-200"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Follow-Up Message
+                </Button>
               </div>
-            </>
+            </div>
           )}
 
           {/* Error */}

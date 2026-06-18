@@ -251,7 +251,7 @@ export default function AutomationsPage() {
                   </div>
 
                   {/* Replies badges */}
-                  {automation.triggerType === "COMMENT" && (
+                  {automation.triggerType === "COMMENT" ? (
                     <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground animate-fade-in">
                       <span className="font-semibold text-xs text-muted-foreground/80">Replies:</span>
                       <span className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 bg-background text-foreground/85 border-border">
@@ -261,34 +261,72 @@ export default function AutomationsPage() {
                         ✅ DM
                       </span>
                     </div>
+                  ) : (
+                    <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground animate-fade-in">
+                      <span className="font-semibold text-xs text-muted-foreground/80">Sequence:</span>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 bg-background text-foreground/85 border-border">
+                        📩 Opening + {automation.messages?.length || 0} message(s)
+                      </span>
+                    </div>
                   )}
 
                   {/* Automation Details */}
                   <div className="mt-4 pt-3.5 border-t border-border/30 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs animate-fade-in">
-                    <div>
-                      <span className="block font-medium text-muted-foreground">Trigger</span>
-                      <span className="mt-1 block font-semibold text-foreground/90">
-                        {automation.triggerType === "COMMENT" ? `Comment (${automation.matchType})` : "Direct Message"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block font-medium text-muted-foreground">Reply to Comment</span>
-                      <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.commentReplyMessage || ""}>
-                        {automation.enableCommentReply ? (automation.commentReplyMessage || "Enabled") : "Disabled"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block font-medium text-muted-foreground">DM Message</span>
-                      <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.responseMessage || ""}>
-                        {automation.responseMessage || "(No DM message)"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block font-medium text-muted-foreground">Posts</span>
-                      <span className="mt-1 block font-semibold text-foreground/90">
-                        {automation.applyToAllPosts ? "All Posts" : `${automation.selectedMedia?.length || 0} selected`}
-                      </span>
-                    </div>
+                    {automation.triggerType === "COMMENT" ? (
+                      <>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Trigger</span>
+                          <span className="mt-1 block font-semibold text-foreground/90">
+                            Comment ({automation.matchType})
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Reply to Comment</span>
+                          <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.commentReplyMessage || ""}>
+                            {automation.enableCommentReply ? (automation.commentReplyMessage || "Enabled") : "Disabled"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">DM Message</span>
+                          <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.responseMessage || ""}>
+                            {automation.responseMessage || "(No DM message)"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Posts</span>
+                          <span className="mt-1 block font-semibold text-foreground/90">
+                            {automation.applyToAllPosts ? "All Posts" : `${automation.selectedMedia?.length || 0} selected`}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Trigger</span>
+                          <span className="mt-1 block font-semibold text-foreground/90">
+                            Direct Message
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Opening Message</span>
+                          <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.openingMessage || ""}>
+                            {automation.openingMessage || "(No opening message)"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Sequential Queue</span>
+                          <span className="mt-1 block font-semibold text-foreground/90">
+                            {automation.messages?.length || 0} message(s)
+                          </span>
+                        </div>
+                        <div>
+                          <span className="block font-medium text-muted-foreground">Scope</span>
+                          <span className="mt-1 block font-semibold text-foreground/90">
+                            All DMs
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Analytics & Metrics */}
