@@ -43,7 +43,12 @@ model Automation {
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  applyToAllPosts Boolean   @default(true)
+  applyToAllPosts      Boolean   @default(true)
+  enableCommentReply   Boolean   @default(false)
+  commentReplyMessage  String?
+  triggerCount         Int       @default(0)
+  commentsRepliedCount Int       @default(0)
+  dmsSentCount         Int       @default(0)
 
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
   selectedMedia    InstagramMedia[]

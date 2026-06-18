@@ -250,12 +250,64 @@ export default function AutomationsPage() {
                     ))}
                   </div>
 
-                  {/* Response preview */}
-                  {automation.responseMessage && (
-                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
-                      → {automation.responseMessage}
-                    </p>
+                  {/* Replies badges */}
+                  {automation.triggerType === "COMMENT" && (
+                    <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground animate-fade-in">
+                      <span className="font-semibold text-xs text-muted-foreground/80">Replies:</span>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 bg-background text-foreground/85 border-border">
+                        {automation.enableCommentReply ? "✅" : "❌"} Comment
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 bg-background text-foreground/85 border-border">
+                        ✅ DM
+                      </span>
+                    </div>
                   )}
+
+                  {/* Automation Details */}
+                  <div className="mt-4 pt-3.5 border-t border-border/30 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs animate-fade-in">
+                    <div>
+                      <span className="block font-medium text-muted-foreground">Trigger</span>
+                      <span className="mt-1 block font-semibold text-foreground/90">
+                        {automation.triggerType === "COMMENT" ? `Comment (${automation.matchType})` : "Direct Message"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block font-medium text-muted-foreground">Reply to Comment</span>
+                      <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.commentReplyMessage || ""}>
+                        {automation.enableCommentReply ? (automation.commentReplyMessage || "Enabled") : "Disabled"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block font-medium text-muted-foreground">DM Message</span>
+                      <span className="mt-1 block font-semibold text-foreground/90 truncate max-w-[120px]" title={automation.responseMessage || ""}>
+                        {automation.responseMessage || "(No DM message)"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block font-medium text-muted-foreground">Posts</span>
+                      <span className="mt-1 block font-semibold text-foreground/90">
+                        {automation.applyToAllPosts ? "All Posts" : `${automation.selectedMedia?.length || 0} selected`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Analytics & Metrics */}
+                  <div className="mt-3.5 pt-3 border-t border-border/20 flex flex-wrap gap-4 text-[10px] text-muted-foreground animate-fade-in">
+                    <div className="flex items-center gap-1">
+                      <span>Total Triggers:</span>
+                      <span className="font-bold text-foreground">{automation.triggerCount || 0}</span>
+                    </div>
+                    {automation.enableCommentReply && (
+                      <div className="flex items-center gap-1">
+                        <span>Comments Replied:</span>
+                        <span className="font-bold text-foreground">{automation.commentsRepliedCount || 0}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <span>DMs Sent:</span>
+                      <span className="font-bold text-foreground">{automation.dmsSentCount || 0}</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Actions */}

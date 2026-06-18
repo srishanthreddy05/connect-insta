@@ -59,6 +59,8 @@ export function AutomationForm({
   const [choice1, setChoice1] = useState("");
   const [choice2, setChoice2] = useState("");
   const [fallback, setFallback] = useState("Please reply with 1 or 2");
+  const [enableCommentReply, setEnableCommentReply] = useState(false);
+  const [commentReplyMessage, setCommentReplyMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -97,6 +99,8 @@ export function AutomationForm({
       setResponseMessage(automation.responseMessage || "");
       setApplyToAllPosts(automation.applyToAllPosts);
       setSelectedMediaIds(automation.selectedMedia?.map((m) => m.mediaId) || []);
+      setEnableCommentReply(automation.enableCommentReply || false);
+      setCommentReplyMessage(automation.commentReplyMessage || "");
 
       if (automation.triggerType === "DM" && automation.flowSteps) {
         const flow = automation.flowSteps as any;
@@ -122,6 +126,8 @@ export function AutomationForm({
       setResponseMessage("");
       setApplyToAllPosts(true);
       setSelectedMediaIds([]);
+      setEnableCommentReply(false);
+      setCommentReplyMessage("");
       setGreeting("");
       setChoice1("");
       setChoice2("");
@@ -160,6 +166,11 @@ export function AutomationForm({
       return;
     }
 
+    if (triggerType === "COMMENT" && enableCommentReply && !commentReplyMessage.trim()) {
+      setSubmitError("Comment reply message is required when 'Reply to Comment' is enabled.");
+      return;
+    }
+
     if (triggerType === "DM" && (!greeting || !choice1 || !choice2)) {
       setSubmitError("Greeting, Option 1 Reply, and Option 2 Reply are all required for DM triggers.");
       return;
@@ -174,6 +185,8 @@ export function AutomationForm({
       triggerType,
       applyToAllPosts,
       selectedMediaIds: applyToAllPosts ? [] : selectedMediaIds,
+      enableCommentReply: triggerType === "COMMENT" ? enableCommentReply : false,
+      commentReplyMessage: (triggerType === "COMMENT" && enableCommentReply) ? commentReplyMessage : null,
     };
 
     if (triggerType === "DM") {
@@ -463,6 +476,45 @@ export function AutomationForm({
                   className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
                 />
               </div>
+
+              {/* Reply to comment checkbox */}
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="enableCommentReply"
+                  checked={enableCommentReply}
+                  onChange={(e) => setEnableCommentReply(e.target.checked)}
+                  className="h-4 w-4 rounded border-input bg-input/50 text-primary focus:ring-ring/30 accent-pink-500"
+                />
+                <label
+                  htmlFor="enableCommentReply"
+                  className="text-sm font-medium text-muted-foreground cursor-pointer select-none"
+                >
+                  Reply to Comment
+                </label>
+              </div>
+
+              {/* Comment reply message (hidden when disabled) */}
+              {enableCommentReply && (
+                <div className="space-y-2 border-l-2 border-primary/30 pl-3 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Comment Reply Message
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">
+                      {commentReplyMessage.length} characters
+                    </span>
+                  </div>
+                  <textarea
+                    value={commentReplyMessage}
+                    onChange={(e) => setCommentReplyMessage(e.target.value)}
+                    placeholder="Thanks! Check your DM 👇"
+                    rows={2}
+                    required={enableCommentReply}
+                    className="w-full rounded-xl border border-input bg-input/50 px-3 py-2.5 text-sm outline-none resize-none focus:ring-2 focus:ring-ring/30 transition-all"
+                  />
+                </div>
+              )}
             </>
           )}
 

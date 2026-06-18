@@ -37,6 +37,11 @@ export interface Automation {
   updatedAt: string;
   applyToAllPosts: boolean;
   selectedMedia?: InstagramMedia[];
+  enableCommentReply: boolean;
+  commentReplyMessage: string | null;
+  triggerCount: number;
+  commentsRepliedCount: number;
+  dmsSentCount: number;
 }
 
 export interface CreateAutomationPayload {
@@ -49,6 +54,8 @@ export interface CreateAutomationPayload {
   flowSteps?: Record<string, unknown> | null;
   applyToAllPosts?: boolean;
   selectedMediaIds?: string[];
+  enableCommentReply?: boolean;
+  commentReplyMessage?: string | null;
 }
 
 export interface UpdateAutomationPayload {
@@ -61,6 +68,8 @@ export interface UpdateAutomationPayload {
   flowSteps?: Record<string, unknown> | null;
   applyToAllPosts?: boolean;
   selectedMediaIds?: string[];
+  enableCommentReply?: boolean;
+  commentReplyMessage?: string | null;
 }
 
 export interface WebhookEvent {

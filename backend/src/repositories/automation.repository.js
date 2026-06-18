@@ -42,7 +42,7 @@ async function findById(id) {
 }
 
 
-async function create({ userId, instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds }) {
+async function create({ userId, instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage }) {
   const db = getDb();
   return db.automation.create({
     data: {
@@ -55,6 +55,8 @@ async function create({ userId, instagramId, name, keywords, matchType, response
       triggerType,
       flowSteps,
       applyToAllPosts: applyToAllPosts !== undefined ? applyToAllPosts : true,
+      enableCommentReply: enableCommentReply !== undefined ? enableCommentReply : false,
+      commentReplyMessage,
       isActive: true,
       selectedMedia: {
         connect: (selectedMediaIds || []).map((mediaId) => ({ mediaId })),
@@ -66,7 +68,7 @@ async function create({ userId, instagramId, name, keywords, matchType, response
   });
 }
 
-async function update(id, { name, keywords, matchType, responseMessage, isActive, triggerType, flowSteps, applyToAllPosts, selectedMediaIds }) {
+async function update(id, { name, keywords, matchType, responseMessage, isActive, triggerType, flowSteps, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage }) {
   const db = getDb();
   const data = {};
   if (name !== undefined) data.name = name;
@@ -77,6 +79,8 @@ async function update(id, { name, keywords, matchType, responseMessage, isActive
   if (triggerType !== undefined) data.triggerType = triggerType;
   if (flowSteps !== undefined) data.flowSteps = flowSteps;
   if (applyToAllPosts !== undefined) data.applyToAllPosts = applyToAllPosts;
+  if (enableCommentReply !== undefined) data.enableCommentReply = enableCommentReply;
+  if (commentReplyMessage !== undefined) data.commentReplyMessage = commentReplyMessage;
   if (selectedMediaIds !== undefined) {
     data.selectedMedia = {
       set: selectedMediaIds.map((mediaId) => ({ mediaId })),
@@ -106,4 +110,39 @@ async function findActiveDMAutomation(instagramId) {
   });
 }
 
-module.exports = { findActiveByInstagramId, findAllByUserId, findById, create, update, remove, findActiveDMAutomation };
+async function incrementTriggerCount(id) {
+  const db = getDb();
+  return db.automation.update({
+    where: { id },
+    data: { triggerCount: { increment: 1 } },
+  });
+}
+
+async function incrementCommentsRepliedCount(id) {
+  const db = getDb();
+  return db.automation.update({
+    where: { id },
+    data: { commentsRepliedCount: { increment: 1 } },
+  });
+}
+
+async function incrementDmsSentCount(id) {
+  const db = getDb();
+  return db.automation.update({
+    where: { id },
+    data: { dmsSentCount: { increment: 1 } },
+  });
+}
+
+module.exports = {
+  findActiveByInstagramId,
+  findAllByUserId,
+  findById,
+  create,
+  update,
+  remove,
+  findActiveDMAutomation,
+  incrementTriggerCount,
+  incrementCommentsRepliedCount,
+  incrementDmsSentCount,
+};

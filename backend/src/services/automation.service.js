@@ -134,6 +134,18 @@ async function getAutomationById(id) {
   return automationRepo.findById(id);
 }
 
+async function incrementTriggerCount(id) {
+  return automationRepo.incrementTriggerCount(id);
+}
+
+async function incrementCommentsRepliedCount(id) {
+  return automationRepo.incrementCommentsRepliedCount(id);
+}
+
+async function incrementDmsSentCount(id) {
+  return automationRepo.incrementDmsSentCount(id);
+}
+
 module.exports = {
   matchesKeyword,
   findMatchingAutomation,
@@ -142,4 +154,7 @@ module.exports = {
   updateAutomation,
   deleteAutomation,
   getAutomationById,
+  incrementTriggerCount,
+  incrementCommentsRepliedCount,
+  incrementDmsSentCount,
 };

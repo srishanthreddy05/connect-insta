@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { Zap, Shield } from "lucide-react";
+import { Zap, Shield, Check, MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 // Google G SVG icon
 function GoogleIcon() {
@@ -47,10 +48,8 @@ export default function LoginPage() {
     setSigning(true);
     try {
       await signInWithGoogle();
-      // onAuthStateChanged fires → AuthProvider sets user → useEffect above redirects
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign-in failed";
-      // Ignore popup-closed-by-user
       if (!msg.includes("popup-closed")) {
         setError(msg);
       }
@@ -61,69 +60,86 @@ export default function LoginPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="relative flex flex-1 items-center justify-center px-4 overflow-hidden">
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-primary/8 blur-[120px]" />
-        <div className="absolute right-1/4 bottom-1/4 h-80 w-80 rounded-full bg-chart-2/8 blur-[120px]" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-72 w-72 rounded-full bg-chart-3/6 blur-[100px]" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-white px-4 sm:px-6">
+      {/* Subtle background pattern */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-1/4 -top-1/4 h-[600px] w-[600px] rounded-full bg-gradient-to-br from-slate-100 to-transparent opacity-60 blur-3xl" />
+        <div className="absolute -bottom-1/4 -right-1/4 h-[500px] w-[500px] rounded-full bg-gradient-to-tl from-slate-100 to-transparent opacity-60 blur-3xl" />
       </div>
 
-      <div className="relative w-full max-w-sm animate-fade-in-up">
-        {/* Brand */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex items-center justify-center rounded-2xl ig-gradient-bg p-4 shadow-2xl glow-lg">
-            <Zap className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            <span className="ig-gradient-text">InstaConnect</span>
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Instagram Automation Dashboard
-          </p>
+      <div className="relative z-10 flex w-full max-w-md flex-col items-center text-center">
+        {/* Logo */}
+        <div className="mb-8">
+          <Image
+            src="/logo.jpeg"
+            alt="Connect Logo"
+            width={72}
+            height={72}
+            className="mx-auto rounded-2xl shadow-lg"
+            priority
+          />
         </div>
 
-        {/* Card */}
-        <div className="glass rounded-3xl p-8 glow-sm">
-          <p className="mb-6 text-center text-sm text-muted-foreground">
-            Sign in to manage your Instagram automations
-          </p>
+        {/* Headline */}
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+          Automate Instagram conversations.
+        </h1>
+        <p className="mt-4 max-w-sm text-base leading-relaxed text-slate-500 sm:text-lg">
+          Turn comments into DMs, capture leads, and grow your business—all from one dashboard.
+        </p>
 
+        {/* CTA Button */}
+        <div className="mt-10 w-full max-w-xs">
           <Button
             onClick={handleGoogleSignIn}
             disabled={signing}
-            className="w-full h-12 rounded-xl bg-white text-gray-800 hover:bg-gray-50 border border-gray-200 shadow-sm font-medium text-sm flex items-center gap-3 transition-all hover:shadow-md"
+            className="h-12 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-3"
           >
             {signing ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
             ) : (
               <GoogleIcon />
             )}
             {signing ? "Signing in…" : "Continue with Google"}
           </Button>
+        </div>
 
-          {error && (
-            <p className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive animate-fade-in text-center">
-              {error}
-            </p>
-          )}
+        {/* Error */}
+        {error && (
+          <p className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 animate-fade-in">
+            {error}
+          </p>
+        )}
 
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Shield className="h-3.5 w-3.5" />
-            <span>Secured with Google OAuth + Firebase Auth</span>
+        {/* Trust badges */}
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Check className="h-4 w-4 text-green-500" strokeWidth={3} />
+            <span>Official Meta API</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Check className="h-4 w-4 text-green-500" strokeWidth={3} />
+            <span>Secure Authentication</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Check className="h-4 w-4 text-green-500" strokeWidth={3} />
+            <span>No Credit Card Required</span>
           </div>
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground/50">
-          Your Google account is used only for authentication.
-        </p>
+        {/* Footer links */}
+        <div className="mt-10 flex items-center gap-4 text-xs text-slate-400">
+          <a href="#" className="hover:text-slate-600 transition-colors">Privacy</a>
+          <span>•</span>
+          <a href="#" className="hover:text-slate-600 transition-colors">Terms</a>
+        </div>
       </div>
     </div>
   );

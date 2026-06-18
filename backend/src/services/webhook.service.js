@@ -4,7 +4,7 @@
 const webhookEventRepo = require("../repositories/webhookEvent.repository");
 const sentDmRepo = require("../repositories/sentDm.repository");
 const connectedAccountRepo = require("../repositories/connectedAccount.repository");
-const { findMatchingAutomation } = require("./automation.service");
+const automationService = require("./automation.service");
 const metaService = require("./meta.service");
 const { logger } = require("../utils/logger");
 
@@ -141,7 +141,7 @@ async function processWebhook(body, reqId) {
       }
 
       // ── Step 4: Find matching automation ──────────────────────────────
-      const automation = await findMatchingAutomation(instagramId, commentText, mediaId, reqId);
+      const automation = await automationService.findMatchingAutomation(instagramId, commentText, mediaId, reqId);
       if (!automation) {
         logger.info(reqId, `ℹ️ No matching automation for comment`, {
           instagramId,
@@ -157,7 +157,59 @@ async function processWebhook(body, reqId) {
         keywords: automation.keywords,
       });
 
-      // ── Step 5: Send DM ───────────────────────────────────────────────
+      // Increment Trigger Count
+      logger.info(reqId, `📈 Automation Trigger Count Started`, { automationId: automation.id });
+      await automationService.incrementTriggerCount(automation.id).catch((err) => {
+        logger.error(reqId, `⚠️ Failed to increment trigger count`, { error: err.message });
+      });
+
+      // ── Step 5: Comment Reply ──────────────────────────────────────────
+      if (automation.enableCommentReply) {
+        logger.info(reqId, `💬 Comment Reply Started`, {
+          automationId: automation.id,
+          commentId: eventId,
+        });
+
+        try {
+          if (!automation.commentReplyMessage) {
+            throw new Error("Comment reply enabled but message is empty");
+          }
+
+          await metaService.replyToComment({
+            commentId: eventId,
+            messageText: automation.commentReplyMessage,
+            accessToken: connectedAccount.accessToken,
+            reqId,
+          });
+
+          logger.info(reqId, `✅ Comment Reply Success`, {
+            automationId: automation.id,
+            commentId: eventId,
+          });
+
+          await automationService.incrementCommentsRepliedCount(automation.id).catch((err) => {
+            logger.error(reqId, `⚠️ Failed to increment comments replied count`, { error: err.message });
+          });
+        } catch (replyError) {
+          const apiError = replyError.response?.data?.error || {};
+          logger.error(reqId, `❌ Comment Reply Failed`, {
+            automationId: automation.id,
+            commentId: eventId,
+            error: replyError.message,
+            apiCode: apiError.code,
+            apiSubcode: apiError.error_subcode,
+            apiMessage: apiError.message,
+          });
+          // Continue attempting DM regardless of comment reply failure
+        }
+      }
+
+      // ── Step 6: Send DM ───────────────────────────────────────────────
+      logger.info(reqId, `📨 DM Started`, {
+        automationId: automation.id,
+        recipientId: commenterId,
+      });
+
       let dmResult;
       try {
         dmResult = await metaService.sendDM({
@@ -166,6 +218,15 @@ async function processWebhook(body, reqId) {
           recipientIgUserId: commenterId,
           messageText: automation.responseMessage,
           reqId,
+        });
+
+        logger.info(reqId, `✅ DM Success`, {
+          automationId: automation.id,
+          messageId: dmResult?.message_id,
+        });
+
+        await automationService.incrementDmsSentCount(automation.id).catch((err) => {
+          logger.error(reqId, `⚠️ Failed to increment DMs sent count`, { error: err.message });
         });
       } catch (dmError) {
         const subcode = dmError?.response?.data?.error?.error_subcode;
@@ -191,7 +252,7 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
-      // ── Step 6: Record DM only after successful send ──────────────────
+      // ── Step 7: Record DM only after successful send ──────────────────
       await sentDmRepo.recordIfNew({
         instagramId,
         recipientId: commenterId,
@@ -200,7 +261,7 @@ async function processWebhook(body, reqId) {
         metaMessageId: dmResult?.message_id,
       });
 
-      // ── Step 7: Mark event done ───────────────────────────────────────
+      // ── Step 8: Mark event done ───────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);
 
       logger.info(reqId, `✅ Event fully processed`, {

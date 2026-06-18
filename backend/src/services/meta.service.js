@@ -92,6 +92,25 @@ async function fetchRecentMedia(instagramId, accessToken, limit = 50, reqId = "s
   }
 }
 
+async function replyToComment({ commentId, messageText, accessToken, reqId = "sys" }) {
+  if (!accessToken) throw new Error(`[replyToComment] Access token required`);
+  if (!commentId) throw new Error("[replyToComment] commentId is required");
+  if (!messageText) throw new Error("[replyToComment] messageText is required");
+
+  logger.info(reqId, `💬 Replying to comment`, { commentId, messageText: messageText.slice(0, 60) });
+
+  const res = await axios.post(
+    `https://graph.instagram.com/v25.0/${commentId}/replies`,
+    {
+      message: messageText,
+    },
+    { params: { access_token: accessToken } }
+  );
+
+  logger.info(reqId, `✅ Comment reply sent`, { replyId: res.data?.id, commentId });
+  return res.data;
+}
+
 function parseGraphError(error) {
   return {
     status: error.response?.status || 500,
@@ -105,4 +124,5 @@ module.exports = {
   sendDM,
   parseGraphError,
   fetchRecentMedia,
+  replyToComment,
 };

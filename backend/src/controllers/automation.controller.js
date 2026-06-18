@@ -36,7 +36,7 @@ async function list(req, res, next) {
  */
 async function create(req, res, next) {
   try {
-    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds } = req.body;
+    const { instagramId, name, keywords, matchType, responseMessage, triggerType, flowSteps, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage } = req.body;
 
     if (!instagramId) return res.status(400).json({ ok: false, error: "instagramId is required" });
     if (!name) return res.status(400).json({ ok: false, error: "name is required" });
@@ -46,9 +46,16 @@ async function create(req, res, next) {
       return res.status(400).json({ ok: false, error: "triggerType must be COMMENT or DM" });
     }
 
+    const resolvedEnableCommentReply = enableCommentReply === true || enableCommentReply === "true";
+
     if (resolvedTriggerType === "COMMENT") {
       if (!keywords?.length) return res.status(400).json({ ok: false, error: "keywords array is required" });
       if (!responseMessage) return res.status(400).json({ ok: false, error: "responseMessage is required" });
+      if (resolvedEnableCommentReply) {
+        if (!commentReplyMessage || !commentReplyMessage.trim()) {
+          return res.status(400).json({ ok: false, error: "commentReplyMessage must not be empty when enableCommentReply is true" });
+        }
+      }
     } else {
       if (!flowSteps) return res.status(400).json({ ok: false, error: "flowSteps is required for DM triggers" });
     }
@@ -95,6 +102,8 @@ async function create(req, res, next) {
       flowSteps: flowSteps || null,
       applyToAllPosts: resolvedApplyToAll,
       selectedMediaIds: resolvedMediaIds,
+      enableCommentReply: resolvedEnableCommentReply,
+      commentReplyMessage: resolvedEnableCommentReply ? commentReplyMessage : null,
     });
 
     logger.info(req.reqId, `✅ Automation created`, { id: automation.id, name });
@@ -119,7 +128,7 @@ async function update(req, res, next) {
       return res.status(403).json({ ok: false, error: "Not authorized" });
     }
 
-    const { name, keywords, matchType, responseMessage, isActive, applyToAllPosts, selectedMediaIds } = req.body;
+    const { name, keywords, matchType, responseMessage, isActive, applyToAllPosts, selectedMediaIds, enableCommentReply, commentReplyMessage } = req.body;
 
     // Validate ownership of selected media if they are being updated
     if (applyToAllPosts === false && selectedMediaIds && selectedMediaIds.length > 0) {
@@ -138,6 +147,15 @@ async function update(req, res, next) {
       }
     }
 
+    const resolvedEnableCommentReply = enableCommentReply !== undefined ? (enableCommentReply === true || enableCommentReply === "true") : existing.enableCommentReply;
+    const resolvedCommentReplyMessage = commentReplyMessage !== undefined ? commentReplyMessage : existing.commentReplyMessage;
+
+    if (existing.triggerType === "COMMENT" && resolvedEnableCommentReply) {
+      if (!resolvedCommentReplyMessage || !resolvedCommentReplyMessage.trim()) {
+        return res.status(400).json({ ok: false, error: "commentReplyMessage must not be empty when enableCommentReply is true" });
+      }
+    }
+
     const updated = await automationService.updateAutomation(id, {
       name,
       keywords,
@@ -146,6 +164,8 @@ async function update(req, res, next) {
       isActive,
       applyToAllPosts,
       selectedMediaIds,
+      enableCommentReply: resolvedEnableCommentReply,
+      commentReplyMessage: resolvedEnableCommentReply ? resolvedCommentReplyMessage : null,
     });
 
     logger.info(req.reqId, `✅ Automation updated`, { id });
