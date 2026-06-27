@@ -96,16 +96,16 @@ router.get("/terms", (_req, res) => {
   <p>Last updated: June 2026</p>
 
   <h2>1. Acceptance of Terms</h2>
-  <p>By connecting your Instagram account to InstaConnect, you agree to these Terms of Service. If you do not agree, you must disconnect your account and cease using the service.</p>
+  <p>By connecting your Instagram account to Tekly, you agree to these Terms of Service. If you do not agree, you must disconnect your account and cease using the service.</p>
 
   <h2>2. Use of Service</h2>
-  <p>You agree to use InstaConnect only for lawful purposes and in compliance with all platform guidelines, including Instagram's developer policies.</p>
+  <p>You agree to use Tekly only for lawful purposes and in compliance with all platform guidelines, including Instagram's developer policies.</p>
 
   <h2>3. Instagram Account Connection</h2>
   <p>You are solely responsible for maintaining the security of your connected Instagram accounts and associated authorization tokens.</p>
 
   <h2>4. Prohibited Conduct</h2>
-  <p>You may not use InstaConnect to send spam, bulk unsolicited messages, or any content that violates Meta Platform Guidelines or local regulations.</p>
+  <p>You may not use Tekly to send spam, bulk unsolicited messages, or any content that violates Meta Platform Guidelines or local regulations.</p>
 
   <h2>5. Termination</h2>
   <p>We reserve the right to terminate or suspend access to our service immediately, without prior notice, if you breach the Terms.</p>

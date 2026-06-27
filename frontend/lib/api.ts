@@ -17,7 +17,7 @@ import { auth } from "./firebase";
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   (typeof window !== "undefined" && window.location.hostname !== "localhost"
-    ? "https://connect-insta.onrender.com"
+    ? "https://api.tekly.in"
     : "http://localhost:3000");
 
 async function getAuthHeaders(): Promise<Record<string, string>> {

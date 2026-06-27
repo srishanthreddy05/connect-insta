@@ -65,6 +65,10 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
   for (let i = 0; i < sortedMessages.length; i++) {
     const msgCard = sortedMessages[i];
     const cardIndex = i + 1;
+    
+    // Pace messages naturally with 2 - 3.5 seconds delay before each send
+    await sleep(2000 + Math.random() * 1500);
+
     try {
       const result = await metaService.sendDM({
         instagramId,
@@ -73,7 +77,6 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
         messageText: msgCard.message,
         reqId,
       });
-      await sleep(1500 + Math.random() * 1500);
       logger.info(reqId, `✅ Message ${cardIndex} Sent`, {
         automationId: automation.id,
         msgId: msgCard.id,

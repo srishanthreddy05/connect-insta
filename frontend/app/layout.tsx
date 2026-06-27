@@ -11,9 +11,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "InstaConnect — Instagram Automation Dashboard",
+  title: "Tekly — Instagram Automation Dashboard",
   description:
-    "Manage your Instagram automations, connect accounts, and monitor webhook events with a regression dashboard.",
+    "Manage your Instagram automations, connect accounts, and monitor webhook events.",
 };
 
 export default function RootLayout({

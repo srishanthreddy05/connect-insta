@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import { Zap, Shield, Check, MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+
 
 // Google G SVG icon
 function GoogleIcon() {
@@ -34,7 +33,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const { isAuthenticated, isLoading, signInWithGoogle } = useAuth();
+  const { isAuthenticated, isLoading, signInWithGoogle, signInWithEmail } = useAuth();
   const router = useRouter();
   const [signing, setSigning] = useState(false);
   const [signingEmail, setSigningEmail] = useState(false);
@@ -68,7 +67,7 @@ export default function LoginPage() {
     setError("");
     setSigningEmail(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmail(email, password);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Sign-in failed";
       setError(msg);
@@ -98,7 +97,7 @@ export default function LoginPage() {
         <div className="mb-8">
           <Image
             src="/logo.jpeg"
-            alt="Connect Logo"
+            alt="Tekly Logo"
             width={72}
             height={72}
             className="mx-auto rounded-2xl shadow-lg"
