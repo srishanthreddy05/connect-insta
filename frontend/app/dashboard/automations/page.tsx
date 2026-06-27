@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AutomationForm } from "@/components/automation-form";
+import { toast } from "sonner";
 import {
   getAutomations,
   getAccounts,
@@ -63,30 +64,49 @@ export default function AutomationsPage() {
   }, [fetchData, userId]);
 
   const handleCreate = async (payload: CreateAutomationPayload) => {
-    await createAutomation(payload);
-    await fetchData();
+    try {
+      await createAutomation(payload);
+      toast.success("Automation created successfully");
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create automation");
+    }
   };
 
   const handleUpdate = async (payload: CreateAutomationPayload) => {
     if (!editing) return;
-    await updateAutomation(editing.id, payload);
-    setEditing(null);
-    await fetchData();
+    try {
+      await updateAutomation(editing.id, payload);
+      toast.success("Automation updated successfully");
+      setEditing(null);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update automation");
+    }
   };
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
     try {
       await deleteAutomation(id);
+      toast.success("Automation deleted successfully");
       await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete automation");
     } finally {
       setDeleting(null);
     }
   };
 
   const handleToggle = async (automation: Automation) => {
-    await updateAutomation(automation.id, { isActive: !automation.isActive });
-    await fetchData();
+    const nextState = !automation.isActive;
+    try {
+      await updateAutomation(automation.id, { isActive: nextState });
+      toast.success(`Automation ${nextState ? "activated" : "deactivated"} successfully`);
+      await fetchData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to toggle automation");
+    }
   };
 
   const filtered = automations.filter(

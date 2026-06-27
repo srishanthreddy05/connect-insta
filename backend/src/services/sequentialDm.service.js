@@ -6,6 +6,8 @@ const sentDmRepo = require("../repositories/sentDm.repository");
 const automationService = require("./automation.service");
 const { logger } = require("../utils/logger");
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function sendSequentialMessages({ automation, recipientIgUserId, connectedAccount, reqId = "sys" }) {
   const instagramId = connectedAccount.instagramId;
   const accessToken = connectedAccount.accessToken;
@@ -71,6 +73,7 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
         messageText: msgCard.message,
         reqId,
       });
+      await sleep(1500 + Math.random() * 1500);
       logger.info(reqId, `✅ Message ${cardIndex} Sent`, {
         automationId: automation.id,
         msgId: msgCard.id,

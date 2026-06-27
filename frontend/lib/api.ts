@@ -73,6 +73,10 @@ export function getOAuthUrl(userId: string): string {
   return `${API_BASE}/auth/login?userId=${encodeURIComponent(userId)}`;
 }
 
+export async function deleteAccount(id: string): Promise<void> {
+  await request(`/connected-accounts/${id}`, { method: "DELETE" });
+}
+
 // ── Automations ───────────────────────────────────────────────────────────────
 
 export async function getAutomations(): Promise<Automation[]> {

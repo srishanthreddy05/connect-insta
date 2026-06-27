@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Zap, Shield, Check, MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 // Google G SVG icon
 function GoogleIcon() {
@@ -35,6 +37,9 @@ export default function LoginPage() {
   const { isAuthenticated, isLoading, signInWithGoogle } = useAuth();
   const router = useRouter();
   const [signing, setSigning] = useState(false);
+  const [signingEmail, setSigningEmail] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -55,6 +60,20 @@ export default function LoginPage() {
       }
     } finally {
       setSigning(false);
+    }
+  };
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSigningEmail(true);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Sign-in failed";
+      setError(msg);
+    } finally {
+      setSigningEmail(false);
     }
   };
 
@@ -99,7 +118,7 @@ export default function LoginPage() {
         <div className="mt-10 w-full max-w-xs">
           <Button
             onClick={handleGoogleSignIn}
-            disabled={signing}
+            disabled={signing || signingEmail}
             className="h-12 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-lg hover:shadow-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-3"
           >
             {signing ? (
@@ -111,9 +130,58 @@ export default function LoginPage() {
           </Button>
         </div>
 
+        {/* Reviewer Login Section */}
+        <div className="my-6 flex w-full max-w-xs items-center justify-between gap-2 text-[10px] font-semibold tracking-wider text-slate-400">
+          <span className="h-px flex-1 bg-slate-200"></span>
+          <span>REVIEWER LOGIN</span>
+          <span className="h-px flex-1 bg-slate-200"></span>
+        </div>
+
+        <form onSubmit={handleEmailSignIn} className="w-full max-w-xs space-y-3.5 text-left bg-slate-50 border border-slate-100 rounded-2xl p-5 shadow-sm">
+          <div>
+            <label htmlFor="email" className="block text-xs font-semibold text-slate-600">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all"
+              placeholder="reviewer@example.com"
+            />
+          </div>
+          <div>
+            <label htmlFor="password" className="block text-xs font-semibold text-slate-600">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={signing || signingEmail}
+            className="h-10 w-full rounded-xl bg-slate-900 text-white hover:bg-slate-800 font-semibold text-sm flex items-center justify-center gap-2 mt-2 transition-all duration-200 shadow-md"
+          >
+            {signingEmail ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            ) : (
+              "Sign In with Email"
+            )}
+          </Button>
+        </form>
+
         {/* Error */}
         {error && (
-          <p className="mt-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 animate-fade-in">
+          <p className="mt-4 w-full max-w-xs rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 animate-fade-in text-center">
             {error}
           </p>
         )}
@@ -136,9 +204,9 @@ export default function LoginPage() {
 
         {/* Footer links */}
         <div className="mt-10 flex items-center gap-4 text-xs text-slate-400">
-          <a href="#" className="hover:text-slate-600 transition-colors">Privacy</a>
+          <a href="/privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
           <span>•</span>
-          <a href="#" className="hover:text-slate-600 transition-colors">Terms</a>
+          <a href="/terms" className="hover:text-slate-600 transition-colors">Terms of Service</a>
         </div>
       </div>
     </div>

@@ -13,11 +13,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import {
   getAccounts,
   getOAuthUrl,
   checkSubscription,
   resubscribe,
+  deleteAccount,
 } from "@/lib/api";
 import type { ConnectedAccount } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
@@ -33,6 +35,7 @@ export default function AccountsPage() {
     Record<string, "checking" | "active" | "inactive" | "error">
   >({});
   const [resubscribing, setResubscribing] = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
@@ -75,8 +78,10 @@ export default function AccountsPage() {
     try {
       await resubscribe(instagramId);
       setSubStatus((prev) => ({ ...prev, [instagramId]: "active" }));
-    } catch {
+      toast.success("Webhook subscription active");
+    } catch (err: any) {
       setSubStatus((prev) => ({ ...prev, [instagramId]: "error" }));
+      toast.error(err.message || "Failed to resubscribe webhook");
     } finally {
       setResubscribing(null);
     }
@@ -84,6 +89,24 @@ export default function AccountsPage() {
 
   const handleConnect = () => {
     window.location.href = getOAuthUrl(userId);
+  };
+
+  const handleDisconnectAccount = async (id: string, username: string) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to disconnect @${username}? This will permanently delete the account and all its associated automations.`
+    );
+    if (!confirmed) return;
+
+    setDisconnecting(id);
+    try {
+      await deleteAccount(id);
+      toast.success(`Account @${username} disconnected successfully`);
+      await fetchAccounts();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to disconnect account");
+    } finally {
+      setDisconnecting(null);
+    }
   };
 
   return (
@@ -275,6 +298,16 @@ export default function AccountsPage() {
                         )}
                       />
                       Resubscribe
+                    </Button>
+
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="rounded-lg text-xs"
+                      onClick={() => handleDisconnectAccount(account.id, account.instagramUsername || "Unknown")}
+                      disabled={disconnecting === account.id}
+                    >
+                      Disconnect
                     </Button>
                   </div>
                 </div>

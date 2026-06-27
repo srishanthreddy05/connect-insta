@@ -23,7 +23,7 @@ function igTokenLogin(req, res) {
   const userId = req.query.userId;
   if (!userId) return res.status(400).json({ ok: false, error: "Missing userId" });
 
-  const url = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${config.meta.igAppId}&redirect_uri=${encodeURIComponent(config.meta.igRedirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights&state=${userId}`;
+  const url = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=${config.meta.igAppId}&redirect_uri=${encodeURIComponent(config.meta.igRedirectUri)}&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments&state=${userId}`;
 
   logger.info(reqId, `🔐 Redirecting to Instagram Business OAuth`, { userId });
   res.redirect(url);
@@ -106,4 +106,16 @@ async function igTokenCallback(req, res, next) {
     logger.error(reqId, `❌ IG token callback failed`, { error: err?.response?.data || err.message });
     next(err);
   }
-} module.exports = { listConnectedAccounts, igTokenLogin, igTokenCallback };
+}
+
+async function deleteConnectedAccount(req, res, next) {
+  try {
+    const { id } = req.params;
+    await connectedAccountRepo.deleteById(id, req.userId);
+    res.json({ ok: true, message: "Account disconnected successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { listConnectedAccounts, igTokenLogin, igTokenCallback, deleteConnectedAccount };

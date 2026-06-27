@@ -75,4 +75,55 @@ update: {
   });
 }
 
-module.exports = { findByInstagramId, findAllByUserId, deactivate, upsertFromIg };
+async function deleteById(id, userId) {
+  const db = getDb();
+  
+  // Find the account first to get its instagramId
+  const account = await db.connectedAccount.findFirst({
+    where: { id, userId }
+  });
+  if (!account) {
+    throw new Error("Account not found");
+  }
+
+  const { instagramId } = account;
+
+  // Run in a transaction
+  return db.$transaction(async (tx) => {
+    // 1. Delete AutomationMessages for automations belonging to this instagramId
+    await tx.automationMessage.deleteMany({
+      where: {
+        automation: {
+          instagramId
+        }
+      }
+    });
+
+    // 2. Delete Automations
+    await tx.automation.deleteMany({
+      where: { instagramId }
+    });
+
+    // 3. Delete InstagramMedia
+    await tx.instagramMedia.deleteMany({
+      where: { instagramId }
+    });
+
+    // 4. Delete ConversationStates
+    await tx.conversationState.deleteMany({
+      where: { instagramId }
+    });
+
+    // 5. Delete SentDms
+    await tx.sentDm.deleteMany({
+      where: { instagramId }
+    });
+
+    // 6. Delete ConnectedAccount
+    await tx.connectedAccount.delete({
+      where: { id }
+    });
+  });
+}
+
+module.exports = { findByInstagramId, findAllByUserId, deactivate, upsertFromIg, deleteById };

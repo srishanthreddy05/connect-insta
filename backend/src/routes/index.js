@@ -3,6 +3,7 @@
 
 const express = require("express");
 const router = express.Router();
+const config = require("../config");
 
 const webhookCtrl = require("../controllers/webhook.controller");
 const authCtrl = require("../controllers/auth.controller");
@@ -20,8 +21,9 @@ router.post("/webhook", webhookCtrl.receive);
 // ── OAuth ──────────────────────────────────────────────────────────────────
 // /auth/login?userId=abc123 — redirects to Meta, passes userId as state
 
-// ── Connected Accounts ─────────────────────────────────────────────────────
 router.get("/connected-accounts", requireAuth, authCtrl.listConnectedAccounts);
+router.delete("/connected-accounts/:id", requireAuth, authCtrl.deleteConnectedAccount);
+router.delete("/accounts/:id", requireAuth, authCtrl.deleteConnectedAccount);
 
 // ── Automations (Dashboard CRUD) ───────────────────────────────────────────
 router.get("/automations", requireAuth, automationCtrl.list);
@@ -75,37 +77,47 @@ router.get('/app', (_req, res) => {
 });
 
 router.get("/privacy", (_req, res) => {
+  res.redirect(301, `${config.meta.frontendUrl}/privacy`);
+});
+
+router.get("/terms", (_req, res) => {
   res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Privacy Policy</title>
+  <title>Terms of Service</title>
   <style>
     body { font-family: sans-serif; max-width: 800px; margin: 60px auto; padding: 0 20px; color: #333; line-height: 1.7; }
     h1 { font-size: 2rem; } h2 { margin-top: 2rem; }
   </style>
 </head>
 <body>
-  <h1>Privacy Policy</h1>
+  <h1>Terms of Service</h1>
   <p>Last updated: June 2026</p>
 
-  <h2>1. What We Collect</h2>
-  <p>We collect your Instagram Business account information (username, account ID) and Facebook Page details when you connect your account via OAuth.</p>
+  <h2>1. Acceptance of Terms</h2>
+  <p>By connecting your Instagram account to InstaConnect, you agree to these Terms of Service. If you do not agree, you must disconnect your account and cease using the service.</p>
 
-  <h2>2. How We Use It</h2>
-  <p>We use your account data solely to operate automations you configure — such as sending automated DMs in response to comments on your posts.</p>
+  <h2>2. Use of Service</h2>
+  <p>You agree to use InstaConnect only for lawful purposes and in compliance with all platform guidelines, including Instagram's developer policies.</p>
 
-  <h2>3. Data Storage</h2>
-  <p>Access tokens are encrypted at rest. We do not sell or share your data with third parties.</p>
+  <h2>3. Instagram Account Connection</h2>
+  <p>You are solely responsible for maintaining the security of your connected Instagram accounts and associated authorization tokens.</p>
 
-  <h2>4. Meta Platform Data</h2>
-  <p>We access Instagram and Facebook data through the official Meta Graph API. We comply with <a href="https://developers.facebook.com/policy/">Meta's Platform Policy</a>.</p>
+  <h2>4. Prohibited Conduct</h2>
+  <p>You may not use InstaConnect to send spam, bulk unsolicited messages, or any content that violates Meta Platform Guidelines or local regulations.</p>
 
-  <h2>5. Data Deletion</h2>
-  <p>You can disconnect your Instagram account at any time, which deletes all associated tokens and data from our system.</p>
+  <h2>5. Termination</h2>
+  <p>We reserve the right to terminate or suspend access to our service immediately, without prior notice, if you breach the Terms.</p>
 
-  <h2>6. Contact</h2>
-  <p>For any privacy questions, email us at: <strong>srishanthreddyy05@gmail.com</strong></p>
+  <h2>6. Disclaimer of Warranties</h2>
+  <p>The service is provided "AS IS" and "AS AVAILABLE" without any warranties of any kind, express or implied.</p>
+
+  <h2>7. Governing Law</h2>
+  <p>These terms shall be governed by and construed in accordance with the laws of the jurisdiction in which the provider resides, without regard to conflict of law provisions.</p>
+
+  <h2>8. Contact Us</h2>
+  <p>For any questions regarding these Terms, contact us at: <strong>srishanthreddyy05@gmail.com</strong></p>
 </body>
 </html>`);
 });
