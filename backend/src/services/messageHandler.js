@@ -42,6 +42,7 @@ async function handleDM({ instagramId, eventId, senderId, text, dbEventId }, req
             recipientIgUserId: senderId,
             connectedAccount: account,
             reqId,
+            externalMessageId: eventId,
         });
 
         await webhookEventRepo.markProcessed(dbEventId);

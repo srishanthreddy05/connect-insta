@@ -5,7 +5,7 @@ const axios = require("axios");
 const config = require("../config");
 const { logger } = require("../utils/logger");
 
-
+const rateLimitCache = new Map();
 
 async function subscribeAppToIG(instagramId, accessToken, reqId = "sys") {
   if (!accessToken) throw new Error(`Access token required to subscribe IG account ${instagramId}`);
@@ -47,6 +47,18 @@ async function sendDM({ instagramId, accessToken, recipientIgUserId, messageText
   if (!accessToken) throw new Error(`[sendDM] Access token required`);
   if (!instagramId) throw new Error("[sendDM] instagramId is required");
   if (!recipientIgUserId) throw new Error("[sendDM] recipientIgUserId is required");
+
+  // Rate Limiting Check: Max 5 DMs per minute per recipient
+  const rateLimitKey = `${instagramId}:${recipientIgUserId}`;
+  const now = Date.now();
+  const windowStart = now - 60000;
+  const recentCalls = rateLimitCache.get(rateLimitKey) || [];
+  const callsInWindow = recentCalls.filter(t => t > windowStart);
+  if (callsInWindow.length >= 5) {
+    throw new Error("Rate limit exceeded: Max 5 DMs per minute per recipient");
+  }
+  callsInWindow.push(now);
+  rateLimitCache.set(rateLimitKey, callsInWindow);
 
   logger.info(reqId, `📨 Sending DM`, { fromIgAccount: instagramId, to: recipientIgUserId });
 
@@ -97,6 +109,18 @@ async function replyToComment({ commentId, messageText, accessToken, reqId = "sy
   if (!commentId) throw new Error("[replyToComment] commentId is required");
   if (!messageText) throw new Error("[replyToComment] messageText is required");
 
+  // Rate Limiting Check: Max 10 comment replies per minute per account (accessToken)
+  const rateLimitKey = `${accessToken}:comments`;
+  const now = Date.now();
+  const windowStart = now - 60000;
+  const recentCalls = rateLimitCache.get(rateLimitKey) || [];
+  const callsInWindow = recentCalls.filter(t => t > windowStart);
+  if (callsInWindow.length >= 10) {
+    throw new Error("Rate limit exceeded: Max 10 comment replies per minute");
+  }
+  callsInWindow.push(now);
+  rateLimitCache.set(rateLimitKey, callsInWindow);
+
   logger.info(reqId, `💬 Replying to comment`, { commentId, messageText: messageText.slice(0, 60) });
 
   const res = await axios.post(
@@ -109,6 +133,31 @@ async function replyToComment({ commentId, messageText, accessToken, reqId = "sy
 
   logger.info(reqId, `✅ Comment reply sent`, { replyId: res.data?.id, commentId });
   return res.data;
+}
+
+async function getAppWebhookSubscriptions() {
+  try {
+    const appToken = `${config.meta.igAppId}|${config.meta.igAppSecret}`;
+    const res = await axios.get(`https://graph.facebook.com/v25.0/${config.meta.igAppId}/subscriptions`, {
+      params: { access_token: appToken }
+    });
+    return res.data?.data || [];
+  } catch (error) {
+    logger.error("sys", "❌ Failed to fetch app webhook subscriptions", { error: error.message });
+    return [];
+  }
+}
+
+async function getGrantedPermissions(accessToken) {
+  try {
+    const res = await axios.get(`https://graph.instagram.com/v25.0/me/permissions`, {
+      params: { access_token: accessToken }
+    });
+    return res.data?.data || [];
+  } catch (error) {
+    logger.error("sys", "❌ Failed to fetch token permissions", { error: error.message });
+    throw error;
+  }
 }
 
 function parseGraphError(error) {
@@ -125,4 +174,6 @@ module.exports = {
   parseGraphError,
   fetchRecentMedia,
   replyToComment,
+  getAppWebhookSubscriptions,
+  getGrantedPermissions,
 };

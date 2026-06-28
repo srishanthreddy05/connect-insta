@@ -13,16 +13,17 @@ datasource db {
 }
 
 model ConnectedAccount {
-  id                String    @id @default(cuid())
-  userId            String
-  instagramId       String    @unique
-  instagramUsername String?
-  accessToken       String
-  tokenExpiresAt    DateTime?
-  connectedAt       DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  isActive          Boolean   @default(true)
-  mediaLastSyncedAt DateTime?
+  id                 String    @id @default(cuid())
+  userId             String
+  instagramId        String    @unique
+  instagramUsername  String?
+  accessToken        String
+  tokenExpiresAt     DateTime?
+  connectedAt        DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  isActive           Boolean   @default(true)
+  mediaLastSyncedAt  DateTime?
+  missingPermissions String[]  @default([])
 
   automations Automation[]
   media       InstagramMedia[]
@@ -50,6 +51,7 @@ model Automation {
   commentsRepliedCount Int       @default(0)
   dmsSentCount         Int       @default(0)
   openingMessage       String?
+  lastError            String?
 
   connectedAccount ConnectedAccount @relation(fields: [instagramId], references: [instagramId])
   selectedMedia    InstagramMedia[]
@@ -119,15 +121,17 @@ model WebhookEvent {
 }
 
 model SentDm {
-  id            String   @id @default(cuid())
-  instagramId   String
-  recipientId   String
-  automationId  String
-  messageText   String
-  metaMessageId String?
-  sentAt        DateTime @default(now())
+  id                String   @id @default(cuid())
+  instagramId       String
+  recipientId       String
+  automationId      String
+  messageText       String
+  metaMessageId     String?
+  messageType       String   @default("COMMENT_REPLY")
+  externalMessageId String   @default("")
+  sentAt            DateTime @default(now())
 
-  @@unique([instagramId, recipientId, automationId])
+  @@unique([instagramId, recipientId, messageType, externalMessageId])
   @@map("sent_dms")
 }
 

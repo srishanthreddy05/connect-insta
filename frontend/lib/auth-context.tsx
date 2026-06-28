@@ -6,6 +6,8 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   type User,
 } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
@@ -18,6 +20,8 @@ interface AuthContextType {
   isLoading: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -29,20 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const isMock = typeof window !== "undefined" && localStorage.getItem("mock-reviewer") === "true";
-    if (isMock) {
-      const mockUser = {
-        uid: "mock-reviewer-uid",
-        email: "reviewer@tekly.in",
-        displayName: "Meta Reviewer",
-        photoURL: null,
-        getIdToken: async () => "mock-reviewer-token",
-      } as unknown as User;
-      setUser(mockUser);
-      setIsLoading(false);
-      return;
-    }
-
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setIsLoading(false);
@@ -56,27 +46,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    if (email === "reviewer@tekly.in" && password === "TeklyReviewer2026!") {
-      const mockUser = {
-        uid: "mock-reviewer-uid",
-        email: "reviewer@tekly.in",
-        displayName: "Meta Reviewer",
-        photoURL: null,
-        getIdToken: async () => "mock-reviewer-token",
-      } as unknown as User;
-      setUser(mockUser);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("mock-reviewer", "true");
-      }
-    } else {
-      await signInWithEmailAndPassword(auth, email, password);
-    }
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    await createUserWithEmailAndPassword(auth, email, password);
+  };
+
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
   };
 
   const signOut = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("mock-reviewer");
-    }
     await firebaseSignOut(auth);
     setUser(null);
     // No auto-redirect — let the user stay on the page or navigate manually
@@ -91,6 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         signInWithGoogle,
         signInWithEmail,
+        signUpWithEmail,
+        sendPasswordReset,
         signOut,
       }}
     >

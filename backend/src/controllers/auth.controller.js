@@ -75,12 +75,30 @@ async function igTokenCallback(req, res, next) {
     const igUsername = igProfile.data.username;
 
     const igProfessionalId = igProfile.data.user_id;
+
+    // Audit Meta permission scopes
+    let missingPermissions = [];
+    try {
+      const permissions = await metaService.getGrantedPermissions(longToken);
+      const requiredScopes = [
+        "instagram_business_basic",
+        "instagram_business_manage_messages",
+        "instagram_business_manage_comments"
+      ];
+      missingPermissions = requiredScopes.filter(scope => 
+        !permissions.some(p => p.permission === scope && p.status === "granted")
+      );
+    } catch (e) {
+      logger.warn(reqId, `⚠️ Failed to fetch permissions during login`, { error: e.message });
+    }
+
     const account = await connectedAccountRepo.upsertFromIg({
       userId,
       instagramId: igProfessionalId,
       instagramUsername: igUsername,
       accessToken: longToken,
       tokenExpiresAt,
+      missingPermissions,
     });
 
     logger.info(reqId, `✅ IG OAuth complete`, { igProfessionalId, igUsername });
@@ -100,7 +118,10 @@ async function igTokenCallback(req, res, next) {
       logger.warn(reqId, `⚠️ Initial Instagram media sync failed (non-fatal)`, { error: e.message });
     }
 
-    res.redirect(`${frontendUrl}?connected=true`);
+    const redirectParams = missingPermissions.length > 0 
+      ? `?connected=true&missing_scopes=${encodeURIComponent(missingPermissions.join(","))}`
+      : `?connected=true`;
+    res.redirect(`${frontendUrl}${redirectParams}`);
 
   } catch (err) {
     logger.error(reqId, `❌ IG token callback failed`, { error: err?.response?.data || err.message });

@@ -30,6 +30,7 @@ async function findAllByUserId(userId) {
       instagramUsername: true,
       connectedAt: true,
       isActive: true,
+      missingPermissions: true,
     },
     orderBy: { connectedAt: "desc" },
   });
@@ -46,7 +47,7 @@ async function deactivate(instagramId) {
 }
 
 
-async function upsertFromIg({ userId, instagramId, instagramUsername, accessToken, tokenExpiresAt }) {
+async function upsertFromIg({ userId, instagramId, instagramUsername, accessToken, tokenExpiresAt, missingPermissions = [] }) {
   const db = getDb();
   return db.connectedAccount.upsert({
     where: { instagramId },
@@ -56,6 +57,7 @@ async function upsertFromIg({ userId, instagramId, instagramUsername, accessToke
   instagramUsername,
   accessToken: encrypt(accessToken),
   tokenExpiresAt: tokenExpiresAt || null,
+  missingPermissions,
 },
 update: {
   userId,
@@ -63,6 +65,7 @@ update: {
   accessToken: encrypt(accessToken),
   tokenExpiresAt: tokenExpiresAt || null,
   isActive: true,
+  missingPermissions,
   updatedAt: new Date(),
 },
     select: {

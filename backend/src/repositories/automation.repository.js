@@ -106,6 +106,9 @@ async function update(id, { name, keywords, matchType, responseMessage, isActive
   if (commentReplyMessage !== undefined) data.commentReplyMessage = commentReplyMessage;
   if (openingMessage !== undefined) data.openingMessage = openingMessage;
   
+  // Clear lastError whenever the user edits/saves
+  data.lastError = null;
+  
   if (selectedMediaIds !== undefined) {
     data.selectedMedia = {
       set: selectedMediaIds.map((mediaId) => ({ mediaId })),
@@ -179,6 +182,22 @@ async function incrementDmsSentCount(id) {
   });
 }
 
+async function setLastError(id, lastError) {
+  const db = getDb();
+  return db.automation.update({
+    where: { id },
+    data: { lastError, isActive: false },
+  });
+}
+
+async function clearLastError(id) {
+  const db = getDb();
+  return db.automation.update({
+    where: { id },
+    data: { lastError: null },
+  });
+}
+
 module.exports = {
   findActiveByInstagramId,
   findAllByUserId,
@@ -190,4 +209,6 @@ module.exports = {
   incrementTriggerCount,
   incrementCommentsRepliedCount,
   incrementDmsSentCount,
+  setLastError,
+  clearLastError,
 };

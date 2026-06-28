@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { Camera, Zap, Activity, Plus, ArrowRight, RefreshCw } from "lucide-react";
+import { Camera, Zap, Activity, Plus, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react";
 import { StatCard } from "@/components/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,49 @@ import { getAccounts, getAutomations, getWebhookEvents } from "@/lib/api";
 import type { ConnectedAccount, Automation, WebhookEvent } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
+
+function PermissionStatusBanner({ accounts }: { accounts: ConnectedAccount[] }) {
+  const accountsWithMissingPerms = accounts.filter(
+    (a) => a.missingPermissions && a.missingPermissions.length > 0
+  );
+
+  if (accountsWithMissingPerms.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      {accountsWithMissingPerms.map((account) => (
+        <div
+          key={account.id}
+          className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 animate-fade-in-up flex items-start gap-4"
+        >
+          <div className="rounded-xl bg-amber-500/15 p-3 text-amber-600 shrink-0">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-semibold text-amber-800">
+              Missing Permissions for @{account.instagramUsername || account.instagramId}
+            </h4>
+            <p className="text-sm text-slate-700 mt-1">
+              Your Instagram account is missing the following permissions:{" "}
+              <code className="text-amber-800 font-mono text-xs font-semibold">
+                {account.missingPermissions?.join(", ")}
+              </code>.
+              Some automations may not trigger correctly.
+            </p>
+            <button
+              onClick={() => {
+                window.location.href = `/dashboard/accounts`;
+              }}
+              className="mt-3 text-xs font-semibold text-amber-800 hover:text-amber-900 underline bg-transparent border-0 cursor-pointer"
+            >
+              Go to Accounts to Reconnect →
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { userId } = useAuth();
@@ -44,9 +87,9 @@ export default function DashboardPage() {
   const recentEvents = events.slice(0, 5);
 
   const eventTypeColors: Record<string, string> = {
-    comment: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    message: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-    mention: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    comment: "bg-blue-50 text-blue-700 border-blue-200",
+    message: "bg-purple-50 text-purple-700 border-purple-200",
+    mention: "bg-amber-50 text-amber-700 border-amber-200",
   };
 
   return (
@@ -71,6 +114,9 @@ export default function DashboardPage() {
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
         </Button>
       </div>
+
+      {/* Permission warning banner */}
+      <PermissionStatusBanner accounts={accounts} />
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

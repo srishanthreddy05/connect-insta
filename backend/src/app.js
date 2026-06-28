@@ -45,6 +45,30 @@ console.log(`   WEBHOOK_VERIFY_TOKEN ${config.meta.webhookVerifyToken ? "✅" : 
   console.log("   3. POST /automations             — create keyword triggers");
   console.log("   4. POST /admin/test-webhook      — simulate a comment");
   console.log("═".repeat(55) + "\n");
+
+  // Webhook subscription health check on startup
+  const metaService = require("./services/meta.service");
+  async function verifyWebhookSubscriptions() {
+    try {
+      const subscriptions = await metaService.getAppWebhookSubscriptions();
+      const requiredFields = ["comments", "messages"];
+      console.log("🔍 Checking Meta App Webhook Subscriptions...");
+      for (const field of requiredFields) {
+        const hasField = subscriptions.some(s => 
+          (s.object === "instagram" || s.object === "page") && 
+          s.fields?.some(f => (f?.name || f) === field)
+        );
+        if (!hasField) {
+          console.error(`[health] ⚠️ Missing webhook subscription field: ${field}`);
+        } else {
+          console.log(`[health] ✅ Webhook subscription field verified: ${field}`);
+        }
+      }
+    } catch (err) {
+      console.error("[health] ❌ Webhook subscription verification failed:", err.message);
+    }
+  }
+  verifyWebhookSubscriptions();
 });
 
 module.exports = app;

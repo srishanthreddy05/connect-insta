@@ -66,11 +66,35 @@ export default function PrivacyPolicyPage() {
           <div className="glass rounded-2xl p-6 space-y-3 transition-all hover:glow-sm hover:scale-[1.005]">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <span className="text-primary font-mono text-sm">04.</span>
-              Data Retention & Deletion
+              Data Retention & Deletion Policy
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Your credentials (OAuth long-lived access tokens) are stored using secure AES-256 encryption. We retain this data only as long as your account remains connected to our platform. You may request the deletion of all data associated with your profile at any time by utilizing the "Disconnect Account" feature in your dashboard, which triggers a complete, transactional purge of your database rows.
-            </p>
+            <div className="text-sm text-muted-foreground space-y-4 leading-relaxed">
+              <p className="font-semibold text-foreground">While Connected:</p>
+              <ul className="list-disc list-inside space-y-1 pl-2">
+                <li><strong>Instagram account data (username, ID):</strong> Retained only while your Instagram account remains connected to Tekly.</li>
+                <li><strong>Message/comment content:</strong> Processed in real-time and not stored permanently. We retain only metadata (sender ID, timestamp, automation triggered) for 30 days for debugging and analytics purposes.</li>
+                <li><strong>Automation configurations:</strong> Retained until you delete them or disconnect your account.</li>
+              </ul>
+
+              <p className="font-semibold text-foreground pt-2">Upon Disconnect:</p>
+              <ul className="list-disc list-inside space-y-1 pl-2">
+                <li>All Instagram account data is permanently deleted within 24 hours.</li>
+                <li>All automation configurations are deleted.</li>
+                <li>Event logs are anonymized (user identifiers removed) and retained for 90 days for aggregate analytics only.</li>
+              </ul>
+
+              <p className="font-semibold text-foreground pt-2">User Rights:</p>
+              <p>
+                You may request complete deletion of your data at any time by:
+              </p>
+              <ol className="list-decimal list-inside space-y-1 pl-2">
+                <li>Clicking <strong>&quot;Disconnect Account&quot;</strong> in your dashboard, OR</li>
+                <li>Emailing <strong>srishanthreddyy05@gmail.com</strong> with the subject <em>&quot;Data Deletion Request&quot;</em>.</li>
+              </ol>
+              <p className="italic text-xs text-muted-foreground/80">
+                We will process manual deletion requests within 7 business days.
+              </p>
+            </div>
           </div>
 
           <div className="glass rounded-2xl p-6 space-y-3 transition-all hover:glow-sm hover:scale-[1.005]">

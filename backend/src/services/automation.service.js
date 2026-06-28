@@ -146,6 +146,14 @@ async function incrementDmsSentCount(id) {
   return automationRepo.incrementDmsSentCount(id);
 }
 
+async function setLastError(id, lastError) {
+  return automationRepo.setLastError(id, lastError);
+}
+
+async function clearLastError(id) {
+  return automationRepo.clearLastError(id);
+}
+
 module.exports = {
   matchesKeyword,
   findMatchingAutomation,
@@ -157,4 +165,6 @@ module.exports = {
   incrementTriggerCount,
   incrementCommentsRepliedCount,
   incrementDmsSentCount,
+  setLastError,
+  clearLastError,
 };

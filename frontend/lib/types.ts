@@ -7,6 +7,7 @@ export interface ConnectedAccount {
   instagramUsername: string | null;
   connectedAt: string;
   isActive: boolean;
+  missingPermissions?: string[];
 }
 
 export type MatchType = "CONTAINS" | "EXACT" | "STARTS_WITH";
@@ -53,6 +54,7 @@ export interface Automation {
   dmsSentCount: number;
   openingMessage: string | null;
   messages: AutomationMessage[];
+  lastError?: string | null;
 }
 
 export interface CreateAutomationPayload {

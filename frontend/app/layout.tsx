@@ -22,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("h-full antialiased dark", inter.variable)}>
+    <html lang="en" className={cn("h-full antialiased", inter.variable)}>
       <body className="min-h-full flex flex-col">
         <AuthProvider>{children}</AuthProvider>
         <Toaster position="top-right" richColors />

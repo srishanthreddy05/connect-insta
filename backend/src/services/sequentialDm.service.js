@@ -8,7 +8,7 @@ const { logger } = require("../utils/logger");
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function sendSequentialMessages({ automation, recipientIgUserId, connectedAccount, reqId = "sys" }) {
+async function sendSequentialMessages({ automation, recipientIgUserId, connectedAccount, reqId = "sys", externalMessageId = "" }) {
   const instagramId = connectedAccount.instagramId;
   const accessToken = connectedAccount.accessToken;
 
@@ -18,6 +18,21 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
     recipientIgUserId,
   });
 
+  // 0. Check for duplicate BEFORE any API call
+  if (externalMessageId) {
+    const alreadyProcessed = await sentDmRepo.checkProcessed({
+      instagramId,
+      recipientId: recipientIgUserId,
+      messageType: "DM_REPLY",
+      externalMessageId,
+    });
+
+    if (alreadyProcessed) {
+      logger.info(reqId, `⏭️ Duplicate DM reply skipped (already processed)`, { externalMessageId, instagramId });
+      return;
+    }
+  }
+
   // 1. Record trigger to prevent duplicate webhook processing/loops
   const { created } = await sentDmRepo.recordIfNew({
     instagramId,
@@ -25,6 +40,8 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
     automationId: automation.id,
     messageText: automation.openingMessage || "",
     metaMessageId: `seq:${automation.id}:${Date.now()}`,
+    messageType: "DM_REPLY",
+    externalMessageId,
   });
 
   if (!created) {
@@ -56,6 +73,8 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
       automationId: automation.id,
       error: error.message,
     });
+    const errorMsg = error?.response?.data?.error?.message || error.message;
+    await automationService.setLastError(automation.id, `Opening DM failed: ${errorMsg}`).catch(() => {});
   }
 
   // 3. Loop through messages ordered by "order" and send each
@@ -90,6 +109,8 @@ async function sendSequentialMessages({ automation, recipientIgUserId, connected
         msgId: msgCard.id,
         error: error.message,
       });
+      const errorMsg = error?.response?.data?.error?.message || error.message;
+      await automationService.setLastError(automation.id, `Sequential DM ${cardIndex} failed: ${errorMsg}`).catch(() => {});
     }
   }
 

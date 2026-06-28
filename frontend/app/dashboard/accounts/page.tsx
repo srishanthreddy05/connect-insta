@@ -207,8 +207,8 @@ export default function AccountsPage() {
                         className={cn(
                           "rounded-lg text-xs",
                           account.isActive
-                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                            : "bg-zinc-500/10 text-zinc-400 border-zinc-500/30"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : "bg-zinc-50 text-zinc-600 border-zinc-205"
                         )}
                       >
                         {account.isActive ? "Active" : "Inactive"}
@@ -236,7 +236,7 @@ export default function AccountsPage() {
                     {sub === "checking" && (
                       <Badge
                         variant="outline"
-                        className="rounded-lg text-xs bg-blue-500/10 text-blue-400 border-blue-500/30"
+                        className="rounded-lg text-xs bg-blue-50 text-blue-700 border-blue-200"
                       >
                         <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
                         Checking…
@@ -245,7 +245,7 @@ export default function AccountsPage() {
                     {sub === "active" && (
                       <Badge
                         variant="outline"
-                        className="rounded-lg text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                        className="rounded-lg text-xs bg-emerald-50 text-emerald-700 border-emerald-200"
                       >
                         <Wifi className="mr-1 h-3 w-3" />
                         Subscribed
@@ -254,7 +254,7 @@ export default function AccountsPage() {
                     {sub === "inactive" && (
                       <Badge
                         variant="outline"
-                        className="rounded-lg text-xs bg-amber-500/10 text-amber-400 border-amber-500/30"
+                        className="rounded-lg text-xs bg-amber-50 text-amber-700 border-amber-200"
                       >
                         <WifiOff className="mr-1 h-3 w-3" />
                         Not subscribed
@@ -263,7 +263,7 @@ export default function AccountsPage() {
                     {sub === "error" && (
                       <Badge
                         variant="outline"
-                        className="rounded-lg text-xs bg-red-500/10 text-red-400 border-red-500/30"
+                        className="rounded-lg text-xs bg-red-50 text-red-700 border-red-200"
                       >
                         <XCircle className="mr-1 h-3 w-3" />
                         Error

@@ -12,10 +12,10 @@ interface EventRowProps {
 }
 
 const eventTypeColors: Record<string, string> = {
-  comment: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  message: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  mention: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  unknown: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+  comment: "bg-blue-50 text-blue-700 border-blue-200",
+  message: "bg-purple-50 text-purple-700 border-purple-200",
+  mention: "bg-amber-50 text-amber-700 border-amber-200",
+  unknown: "bg-zinc-50 text-zinc-600 border-zinc-200",
 };
 
 export function EventRow({ event, index }: EventRowProps) {
@@ -46,11 +46,11 @@ export function EventRow({ event, index }: EventRowProps) {
         {/* Status icon */}
         <div className="shrink-0">
           {event.processed && !event.error ? (
-            <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
           ) : event.error ? (
-            <XCircle className="h-5 w-5 text-red-400" />
+            <XCircle className="h-5 w-5 text-red-600" />
           ) : (
-            <AlertCircle className="h-5 w-5 text-amber-400" />
+            <AlertCircle className="h-5 w-5 text-amber-600" />
           )}
         </div>
 

@@ -163,6 +163,20 @@ async function processWebhook(body, reqId) {
         logger.error(reqId, `⚠️ Failed to increment trigger count`, { error: err.message });
       });
 
+      // ── Step 4.5: Check for duplicate BEFORE any API call ─────────────────
+      const alreadyProcessed = await sentDmRepo.checkProcessed({
+        instagramId,
+        recipientId: commenterId,
+        messageType: "COMMENT_REPLY",
+        externalMessageId: eventId,
+      });
+
+      if (alreadyProcessed) {
+        logger.info(reqId, `⏭️ Duplicate comment reply skipped (already processed)`, { eventId, instagramId });
+        await webhookEventRepo.markProcessed(dbEvent.id);
+        continue;
+      }
+
       // ── Step 5: Comment Reply ──────────────────────────────────────────
       if (automation.enableCommentReply) {
         logger.info(reqId, `💬 Comment Reply Started`, {
@@ -242,6 +256,9 @@ async function processWebhook(body, reqId) {
           continue;
         }
 
+        const errorMsg = dmError?.response?.data?.error?.message || dmError.message;
+        await automationService.setLastError(automation.id, errorMsg).catch(() => {});
+
         // Any other DM error — log and move on
         logger.error(reqId, `❌ DM send failed`, {
           eventId,
@@ -259,6 +276,8 @@ async function processWebhook(body, reqId) {
         automationId: automation.id,
         messageText: automation.responseMessage,
         metaMessageId: dmResult?.message_id,
+        messageType: "COMMENT_REPLY",
+        externalMessageId: eventId,
       });
 
       // ── Step 8: Mark event done ───────────────────────────────────────

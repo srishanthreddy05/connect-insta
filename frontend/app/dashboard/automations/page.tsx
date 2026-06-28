@@ -10,6 +10,7 @@ import {
   RefreshCw,
   ToggleLeft,
   ToggleRight,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -225,7 +226,7 @@ export default function AutomationsPage() {
                   title={automation.isActive ? "Deactivate" : "Activate"}
                 >
                   {automation.isActive ? (
-                    <ToggleRight className="h-6 w-6 text-emerald-400" />
+                    <ToggleRight className="h-6 w-6 text-emerald-600" />
                   ) : (
                     <ToggleLeft className="h-6 w-6 text-muted-foreground" />
                   )}
@@ -240,8 +241,8 @@ export default function AutomationsPage() {
                       className={cn(
                         "rounded-lg text-xs",
                         automation.triggerType === "COMMENT"
-                          ? "bg-blue-500/10 text-blue-400 border-blue-500/30"
-                          : "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                          ? "bg-blue-50 text-blue-700 border-blue-200"
+                          : "bg-purple-50 text-purple-700 border-purple-200"
                       )}
                     >
                       {automation.triggerType === "COMMENT" ? "💬 Comment" : "✉️ DM"}
@@ -348,6 +349,26 @@ export default function AutomationsPage() {
                       </>
                     )}
                   </div>
+
+                  {/* Error Card */}
+                  {automation.lastError && (
+                    <div className="mt-3.5 bg-destructive/10 border border-destructive/20 rounded-xl p-3 flex items-start gap-2.5 animate-fade-in text-xs text-left">
+                      <div className="text-destructive shrink-0 mt-0.5">
+                        <AlertCircle className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-destructive-foreground">
+                          Automation paused: {automation.lastError}
+                        </p>
+                        <button
+                          onClick={() => handleToggle(automation)}
+                          className="mt-1 block font-semibold text-primary hover:underline bg-transparent border-0 cursor-pointer p-0 text-[10px]"
+                        >
+                          Retry / Reactivate now
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Analytics & Metrics */}
                   <div className="mt-3.5 pt-3 border-t border-border/20 flex flex-wrap gap-4 text-[10px] text-muted-foreground animate-fade-in">
