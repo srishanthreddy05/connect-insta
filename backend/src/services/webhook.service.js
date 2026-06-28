@@ -51,6 +51,9 @@ function parseWebhookBody(body) {
       // Loop prevention - skip bot's own outgoing messages
       if (senderId === igAccountId) continue;
 
+      // CHECK 1: Ignore echo messages (your own outgoing messages)
+      if (message.message?.is_echo === true) continue;
+
       if (!message.message) continue;          // ← ADD THIS: skip read receipts
       if (!message.message.text) continue;     // ← ADD THIS: skip messages with no text
 
@@ -121,6 +124,13 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
+      // CHECK 1: Ignore comments from own account
+      if (commenterId === instagramId) {
+        logger.info(reqId, `[WEBHOOK] Ignoring self-comment from own account: ${commenterId}`);
+        await webhookEventRepo.markProcessed(dbEvent.id, "Self-comment ignored");
+        continue;
+      }
+
       // ── Step 3: Look up connected account ─────────────────────────────
       // ── Step 3: Look up connected account ─────────────────────────────
       let connectedAccount = await connectedAccountRepo.findByInstagramId(instagramId);
@@ -163,15 +173,18 @@ async function processWebhook(body, reqId) {
         logger.error(reqId, `⚠️ Failed to increment trigger count`, { error: err.message });
       });
 
-      // ── Step 4.5: Check for duplicate BEFORE any API call ─────────────────
-      const alreadyProcessed = await sentDmRepo.checkProcessed({
+      // ── Step 4.5: Check and record duplicate BEFORE any API call ─────────────────
+      const { created } = await sentDmRepo.recordIfNew({
         instagramId,
         recipientId: commenterId,
+        automationId: automation.id,
+        messageText: automation.responseMessage,
+        metaMessageId: "PENDING",
         messageType: "COMMENT_REPLY",
         externalMessageId: eventId,
       });
 
-      if (alreadyProcessed) {
+      if (!created) {
         logger.info(reqId, `⏭️ Duplicate comment reply skipped (already processed)`, { eventId, instagramId });
         await webhookEventRepo.markProcessed(dbEvent.id);
         continue;
@@ -269,16 +282,25 @@ async function processWebhook(body, reqId) {
         continue;
       }
 
-      // ── Step 7: Record DM only after successful send ──────────────────
-      await sentDmRepo.recordIfNew({
-        instagramId,
-        recipientId: commenterId,
-        automationId: automation.id,
-        messageText: automation.responseMessage,
-        metaMessageId: dmResult?.message_id,
-        messageType: "COMMENT_REPLY",
-        externalMessageId: eventId,
-      });
+      // ── Step 7: Update DM record with the actual message ID ──
+      try {
+        const { getDb } = require("../config/db");
+        const db = getDb();
+        await db.sentDm.update({
+          where: {
+            instagramId_externalMessageId_messageType: {
+              instagramId,
+              externalMessageId: eventId,
+              messageType: "COMMENT_REPLY",
+            }
+          },
+          data: {
+            metaMessageId: dmResult?.message_id || "SENT",
+          }
+        });
+      } catch (updateErr) {
+        logger.warn(reqId, `⚠️ Failed to update metaMessageId for event ${eventId}`, { error: updateErr.message });
+      }
 
       // ── Step 8: Mark event done ───────────────────────────────────────
       await webhookEventRepo.markProcessed(dbEvent.id);

@@ -6,14 +6,15 @@ const { getDb } = require("../config/db");
 /**
  * Checks if a specific response has already been processed/sent.
  */
-async function checkProcessed({ instagramId, recipientId, messageType, externalMessageId }) {
+async function checkProcessed({ instagramId, messageType, externalMessageId }) {
   const db = getDb();
-  return db.sentDm.findFirst({
+  return db.sentDm.findUnique({
     where: {
-      instagramId,
-      recipientId,
-      messageType,
-      externalMessageId,
+      instagramId_externalMessageId_messageType: {
+        instagramId,
+        externalMessageId,
+        messageType,
+      },
     },
   });
 }

@@ -18,6 +18,13 @@ async function handleDM({ instagramId, eventId, senderId, text, dbEventId }, req
             return;
         }
 
+        // CHECK 2: Ignore messages from own account
+        if (senderId === instagramId) {
+            logger.info(reqId, `[WEBHOOK] Ignoring self-message: ${eventId}`);
+            await webhookEventRepo.markProcessed(dbEventId, "Self-message ignored");
+            return;
+        }
+
         // ── Load active DM automation ──────────────────────────
         const automation = await automationRepo.findActiveDMAutomation(instagramId);
         if (!automation) {

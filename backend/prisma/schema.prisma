@@ -131,7 +131,7 @@ model SentDm {
   externalMessageId String   @default("")
   sentAt            DateTime @default(now())
 
-  @@unique([instagramId, recipientId, messageType, externalMessageId])
+  @@unique([instagramId, externalMessageId, messageType])
   @@map("sent_dms")
 }
 
